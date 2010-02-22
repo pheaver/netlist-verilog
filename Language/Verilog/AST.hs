@@ -185,7 +185,9 @@ data Statement
   = BlockingAssignment LValue (Maybe DelayOrEventControl) Expression
   | NonBlockingAssignment LValue (Maybe DelayOrEventControl) Expression
   | IfStmt Expression (Maybe Statement) (Maybe Statement)
-  -- TODO: CaseStmt CaseType Expression [CaseItem]
+  | CaseStmt Expression [CaseItem]
+  -- TODO: casex and casez
+  -- TODO: CaseStmt Expression [CaseItem]
   | ForeverStmt Statement
   | RepeatStmt Expression Statement
   | WhileStmt Expression Statement
@@ -207,6 +209,11 @@ data Statement
 
 data Assignment
   = Assignment LValue Expression
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+data CaseItem
+  = CaseItem [Expression] (Maybe Statement)
+  | CaseDefault (Maybe Statement)
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data BlockDecl
@@ -663,42 +670,45 @@ instance Binary Statement where
                                       put x1
                                       put x2
                                       put x3
-                ForeverStmt x1 -> do putWord8 3
+                CaseStmt x1 x2 -> do putWord8 3
                                      put x1
-                RepeatStmt x1 x2 -> do putWord8 4
+                                     put x2
+                ForeverStmt x1 -> do putWord8 4
+                                     put x1
+                RepeatStmt x1 x2 -> do putWord8 5
                                        put x1
                                        put x2
-                WhileStmt x1 x2 -> do putWord8 5
+                WhileStmt x1 x2 -> do putWord8 6
                                       put x1
                                       put x2
-                ForStmt x1 x2 x3 x4 -> do putWord8 6
+                ForStmt x1 x2 x3 x4 -> do putWord8 7
                                           put x1
                                           put x2
                                           put x3
                                           put x4
-                DelayOrEventControlStmt x1 x2 -> do putWord8 7
+                DelayOrEventControlStmt x1 x2 -> do putWord8 8
                                                     put x1
                                                     put x2
-                WaitStmt x1 x2 -> do putWord8 8
+                WaitStmt x1 x2 -> do putWord8 9
                                      put x1
                                      put x2
-                SeqBlock x1 x2 x3 -> do putWord8 9
+                SeqBlock x1 x2 x3 -> do putWord8 10
                                         put x1
                                         put x2
                                         put x3
-                ParBlock x1 x2 x3 -> do putWord8 10
+                ParBlock x1 x2 x3 -> do putWord8 11
                                         put x1
                                         put x2
                                         put x3
-                AssignStmt x1 -> do putWord8 11
+                AssignStmt x1 -> do putWord8 12
                                     put x1
-                DeAssignStmt x1 -> do putWord8 12
+                DeAssignStmt x1 -> do putWord8 13
                                       put x1
-                ForceStmt x1 -> do putWord8 13
+                ForceStmt x1 -> do putWord8 14
                                    put x1
-                ReleaseStmt x1 -> do putWord8 14
+                ReleaseStmt x1 -> do putWord8 15
                                      put x1
-                Foo x1 -> do putWord8 15
+                Foo x1 -> do putWord8 16
                              put x1
         get
           = do i <- getWord8
@@ -716,41 +726,44 @@ instance Binary Statement where
                            x3 <- get
                            return (IfStmt x1 x2 x3)
                    3 -> do x1 <- get
-                           return (ForeverStmt x1)
-                   4 -> do x1 <- get
                            x2 <- get
-                           return (RepeatStmt x1 x2)
+                           return (CaseStmt x1 x2)
+                   4 -> do x1 <- get
+                           return (ForeverStmt x1)
                    5 -> do x1 <- get
                            x2 <- get
-                           return (WhileStmt x1 x2)
+                           return (RepeatStmt x1 x2)
                    6 -> do x1 <- get
+                           x2 <- get
+                           return (WhileStmt x1 x2)
+                   7 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            x4 <- get
                            return (ForStmt x1 x2 x3 x4)
-                   7 -> do x1 <- get
-                           x2 <- get
-                           return (DelayOrEventControlStmt x1 x2)
                    8 -> do x1 <- get
                            x2 <- get
-                           return (WaitStmt x1 x2)
+                           return (DelayOrEventControlStmt x1 x2)
                    9 -> do x1 <- get
                            x2 <- get
-                           x3 <- get
-                           return (SeqBlock x1 x2 x3)
+                           return (WaitStmt x1 x2)
                    10 -> do x1 <- get
                             x2 <- get
                             x3 <- get
-                            return (ParBlock x1 x2 x3)
+                            return (SeqBlock x1 x2 x3)
                    11 -> do x1 <- get
-                            return (AssignStmt x1)
+                            x2 <- get
+                            x3 <- get
+                            return (ParBlock x1 x2 x3)
                    12 -> do x1 <- get
-                            return (DeAssignStmt x1)
+                            return (AssignStmt x1)
                    13 -> do x1 <- get
-                            return (ForceStmt x1)
+                            return (DeAssignStmt x1)
                    14 -> do x1 <- get
-                            return (ReleaseStmt x1)
+                            return (ForceStmt x1)
                    15 -> do x1 <- get
+                            return (ReleaseStmt x1)
+                   16 -> do x1 <- get
                             return (Foo x1)
                    _ -> error "Corrupted binary data for Statement"
 
@@ -763,6 +776,25 @@ instance Binary Assignment where
           = do x1 <- get
                x2 <- get
                return (Assignment x1 x2)
+
+ 
+instance Binary CaseItem where
+        put x
+          = case x of
+                CaseItem x1 x2 -> do putWord8 0
+                                     put x1
+                                     put x2
+                CaseDefault x1 -> do putWord8 1
+                                     put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           x2 <- get
+                           return (CaseItem x1 x2)
+                   1 -> do x1 <- get
+                           return (CaseDefault x1)
+                   _ -> error "Corrupted binary data for CaseItem"
 
  
 instance Binary BlockDecl where

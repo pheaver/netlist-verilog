@@ -165,6 +165,10 @@ ppStatement (IfStmt expr stmt1 stmt2)
     case stmt2 of
       Just stmt -> text "else" `nestStmt` ppStatement stmt
       Nothing   -> empty
+ppStatement (CaseStmt expr case_items)
+  = text "case" <+> parens (ppExpr expr) $$
+    vcat (map ppCaseItem case_items) $$
+    text "endcase"
 ppStatement (ForeverStmt stmt)
   = text "forever" `nestStmt` ppStatement stmt
 ppStatement (RepeatStmt expr stmt)
@@ -217,6 +221,12 @@ nestStmt x stmt
 ppAssignment :: Assignment -> Doc
 ppAssignment (Assignment x expr)
   = ppLValue x <+> equals <+> ppExpr expr
+
+ppCaseItem :: CaseItem -> Doc
+ppCaseItem (CaseItem es mb_stmt)
+  = fsep [ commasep (map ppExpr es), maybe semi ppStatement mb_stmt ]
+ppCaseItem (CaseDefault mb_stmt)
+  = fsep [ text "default" <+> colon, maybe semi ppStatement mb_stmt ]
 
 ppBlockDecl :: BlockDecl -> Doc
 ppBlockDecl (ParamDeclBlock x)   = ppParamDecl x

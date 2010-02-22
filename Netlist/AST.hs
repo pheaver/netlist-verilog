@@ -136,8 +136,10 @@ data Expr
 
 -- behavioral statement
 data Stmt
-  = Assign LValue Expr          -- non-blocking assignment
+  = Assign LValue Expr         -- non-blocking assignment
   | If Expr Stmt (Maybe Stmt)  -- if statement
+  | Case Expr [([Expr], Stmt)] (Maybe Stmt)
+                               -- case statement, with optional default case
   | Seq [Stmt]                 -- multiple statements (between 'begin' and 'end')
   deriving (Eq, Ord, Show, Data, Typeable)
 
@@ -318,7 +320,11 @@ instance Binary Stmt where
                                   put x1
                                   put x2
                                   put x3
-                Seq x1 -> do putWord8 2
+                Case x1 x2 x3 -> do putWord8 2
+                                    put x1
+                                    put x2
+                                    put x3
+                Seq x1 -> do putWord8 3
                              put x1
         get
           = do i <- getWord8
@@ -331,6 +337,10 @@ instance Binary Stmt where
                            x3 <- get
                            return (If x1 x2 x3)
                    2 -> do x1 <- get
+                           x2 <- get
+                           x3 <- get
+                           return (Case x1 x2 x3)
+                   3 -> do x1 <- get
                            return (Seq x1)
                    _ -> error "Corrupted binary data for Stmt"
 -- GENERATED STOP

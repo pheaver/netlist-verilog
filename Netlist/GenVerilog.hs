@@ -101,6 +101,15 @@ mk_stmt (Assign x expr)
   = V.NonBlockingAssignment (mk_expr x) Nothing (mk_expr expr)
 mk_stmt (If cond s1 mb_s2)
   = V.IfStmt (mk_expr cond) (Just (mk_stmt s1)) (fmap mk_stmt mb_s2)
+mk_stmt (Case e case_items mb_default)
+  = V.CaseStmt (mk_expr e) $
+    [ V.CaseItem (map mk_expr es) (Just (mk_stmt stmt))
+      | (es, stmt) <- case_items ]
+    ++
+    case mb_default of
+      Just stmt -> [V.CaseDefault (Just (mk_stmt stmt))]
+      Nothing   -> []
+
 mk_stmt (Seq stmts)
   = V.SeqBlock Nothing [] (map mk_stmt stmts)
 
