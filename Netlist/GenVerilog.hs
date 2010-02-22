@@ -44,8 +44,13 @@ mk_decl (MemDecl x sz)
   = [V.RegDeclItem (V.RegDecl (size2MaybeRange sz)
                     [V.RegVar (mk_ident x) Nothing])]
 
-mk_decl (InstDecl _ _ _ _ _) -- mod_name inst_name params inputs outputs
-  = error "not ready: InstDecl"
+mk_decl (InstDecl mod_name inst_name params inputs outputs)
+  = [V.ModuleInstItem (V.ModuleInst (mk_ident mod_name) v_params [inst])]
+  where
+    v_params  = [ V.Parameter (mk_ident x) (mk_expr expr) | (x, expr) <- params ]
+    inst      = V.Instance (mk_ident inst_name) Nothing (V.NamedConnections cs)
+    cs        = [ V.NamedConnection (mk_ident x) (mk_expr expr)
+                  | (x, expr) <- inputs ++ outputs ]
 
 mk_decl (InitProcessDecl stmt)
   = [V.InitialItem (mk_stmt stmt)]
