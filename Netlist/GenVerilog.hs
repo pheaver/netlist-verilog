@@ -93,7 +93,7 @@ mk_trigger xs0
 
 mk_stmt :: Stmt -> V.Statement
 mk_stmt (Assign x expr)
-  = V.NonBlockingAssignment (expr_var x) Nothing (mk_expr expr)
+  = V.NonBlockingAssignment (mk_expr x) Nothing (mk_expr expr)
 mk_stmt (If cond s1 mb_s2)
   = V.IfStmt (mk_expr cond) (Just (mk_stmt s1)) (fmap mk_stmt mb_s2)
 mk_stmt (Seq stmts)

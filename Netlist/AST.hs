@@ -135,10 +135,14 @@ data Expr
 
 -- behavioral statement
 data Stmt
-  = Assign Ident Expr          -- non-blocking assignment
+  = Assign LValue Expr          -- non-blocking assignment
   | If Expr Stmt (Maybe Stmt)  -- if statement
   | Seq [Stmt]                 -- multiple statements (between 'begin' and 'end')
   deriving (Eq, Ord, Show, Data, Typeable)
+
+-- not all expressions are allowed on the LHS of an assignment, but we're lazy
+-- and don't enforce that restriction in the AST.
+type LValue = Expr
 
 -- -----------------------------------------------------------------------------
 -- GENERATED START
