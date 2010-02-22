@@ -128,6 +128,8 @@ mk_expr (ExprBinary op expr1 expr2)
   = V.ExprBinary op (mk_expr expr1) (mk_expr expr2)
 mk_expr (ExprCond expr1 expr2 expr3)
   = V.ExprCond (mk_expr expr1) (mk_expr expr2) (mk_expr expr3)
+mk_expr (ExprFunCall x es)
+  = V.ExprFunCall (mk_ident x) (map mk_expr es)
 
 mk_ident :: Ident -> V.Ident
 mk_ident x = V.Ident x

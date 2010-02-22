@@ -277,6 +277,8 @@ ppExpr' prec (ExprCond e1 e2 e3)
   = if prec > cond_prec then parens e else e
   where
     e = ppExpr e1 <+> char '?' <+> ppExpr e2 <+> colon <+> ppExpr e3
+ppExpr' _ (ExprFunCall x es)
+  = ppIdent x <+> parens (commasep (map ppExpr es))
 
 cond_prec, unary_prec :: Int
 cond_prec = 1

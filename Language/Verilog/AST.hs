@@ -236,11 +236,11 @@ data Expression
   | ExprSliceMinus Ident Expression ConstExpr
   | ExprConcat [Expression]
   | ExprMultiConcat Expression [Expression] -- a.k.a. "replication operator"
-  -- TODO: ExprFunCall
   -- TODO: <mintypmax_expression>
   | ExprUnary UnaryOp Expression
   | ExprBinary BinaryOp Expression Expression
   | ExprCond Expression Expression Expression
+  | ExprFunCall Ident [Expression]
   deriving (Eq, Ord, Show, Data, Typeable)
 
 type ConstExpr = Expression
@@ -841,6 +841,9 @@ instance Binary Expression where
                                         put x1
                                         put x2
                                         put x3
+                ExprFunCall x1 x2 -> do putWord8 13
+                                        put x1
+                                        put x2
         get
           = do i <- getWord8
                case i of
@@ -884,6 +887,9 @@ instance Binary Expression where
                             x2 <- get
                             x3 <- get
                             return (ExprCond x1 x2 x3)
+                   13 -> do x1 <- get
+                            x2 <- get
+                            return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expression"
 
  

@@ -131,6 +131,7 @@ data Expr
   | ExprCond Expr Expr Expr
   | ExprUnary UnaryOp Expr
   | ExprBinary BinaryOp Expr Expr
+  | ExprFunCall Ident [Expr]      -- function application
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- behavioral statement
@@ -266,6 +267,9 @@ instance Binary Expr where
                                           put x1
                                           put x2
                                           put x3
+                ExprFunCall x1 x2 -> do putWord8 9
+                                        put x1
+                                        put x2
         get
           = do i <- getWord8
                case i of
@@ -298,6 +302,9 @@ instance Binary Expr where
                            x2 <- get
                            x3 <- get
                            return (ExprBinary x1 x2 x3)
+                   9 -> do x1 <- get
+                           x2 <- get
+                           return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expr"
 
  
