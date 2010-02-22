@@ -174,7 +174,6 @@ data Connections
   | NamedConnections [NamedConnection]
   deriving (Eq, Ord, Show, Data, Typeable)
 
--- we use this for both parameter_value_assignment and named_port_connection
 data NamedConnection
   = NamedConnection Ident Expression
   deriving (Eq, Ord, Show, Data, Typeable)
