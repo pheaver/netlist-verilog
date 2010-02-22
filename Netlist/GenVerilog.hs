@@ -9,7 +9,7 @@
 module Netlist.GenVerilog ( mk_module) where
 
 import Netlist.AST
-import Operators
+--import Operators
 import qualified Language.Verilog.AST as V
 
 -- -----------------------------------------------------------------------------
