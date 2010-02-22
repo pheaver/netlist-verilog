@@ -124,7 +124,9 @@ data Expr
   = ExprNum (Maybe Size) Integer
   | ExprVar Ident
   -- recursive nodes
-  | ExprProject Ident Size Integer -- TODO: left-end and right-end project?
+  | ExprIndex Ident Expr          -- x[e]
+  | ExprSlice Ident Expr Expr     -- x[e1 : e2]
+  | ExprSliceOff Ident Expr Int   -- x[e : e+i] -- 'i' can be negative
   | ExprConcat [Expr]
   | ExprCond Expr Expr Expr
   | ExprUnary UnaryOp Expr
@@ -236,20 +238,27 @@ instance Binary Expr where
                                     put x2
                 ExprVar x1 -> do putWord8 1
                                  put x1
-                ExprProject x1 x2 x3 -> do putWord8 2
-                                           put x1
-                                           put x2
-                                           put x3
-                ExprConcat x1 -> do putWord8 3
+                ExprIndex x1 x2 -> do putWord8 2
+                                      put x1
+                                      put x2
+                ExprSlice x1 x2 x3 -> do putWord8 3
+                                         put x1
+                                         put x2
+                                         put x3
+                ExprSliceOff x1 x2 x3 -> do putWord8 4
+                                            put x1
+                                            put x2
+                                            put x3
+                ExprConcat x1 -> do putWord8 5
                                     put x1
-                ExprCond x1 x2 x3 -> do putWord8 4
+                ExprCond x1 x2 x3 -> do putWord8 6
                                         put x1
                                         put x2
                                         put x3
-                ExprUnary x1 x2 -> do putWord8 5
+                ExprUnary x1 x2 -> do putWord8 7
                                       put x1
                                       put x2
-                ExprBinary x1 x2 x3 -> do putWord8 6
+                ExprBinary x1 x2 x3 -> do putWord8 8
                                           put x1
                                           put x2
                                           put x3
@@ -263,18 +272,25 @@ instance Binary Expr where
                            return (ExprVar x1)
                    2 -> do x1 <- get
                            x2 <- get
-                           x3 <- get
-                           return (ExprProject x1 x2 x3)
+                           return (ExprIndex x1 x2)
                    3 -> do x1 <- get
-                           return (ExprConcat x1)
+                           x2 <- get
+                           x3 <- get
+                           return (ExprSlice x1 x2 x3)
                    4 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprCond x1 x2 x3)
+                           return (ExprSliceOff x1 x2 x3)
                    5 -> do x1 <- get
+                           return (ExprConcat x1)
+                   6 -> do x1 <- get
+                           x2 <- get
+                           x3 <- get
+                           return (ExprCond x1 x2 x3)
+                   7 -> do x1 <- get
                            x2 <- get
                            return (ExprUnary x1 x2)
-                   6 -> do x1 <- get
+                   8 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprBinary x1 x2 x3)

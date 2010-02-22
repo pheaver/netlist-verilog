@@ -231,10 +231,10 @@ data Expression
   | ExprVar Ident
   | ExprString String
   | ExprIndex Ident Expression
-  | ExprProject Ident ConstExpr ConstExpr
+  | ExprSlice Ident ConstExpr ConstExpr
   -- these next two aren't in the spec, but they're certainly in the Verilog standard
-  | ExprProjectPlus Ident Expression ConstExpr
-  | ExprProjectMinus Ident Expression ConstExpr
+  | ExprSlicePlus Ident Expression ConstExpr
+  | ExprSliceMinus Ident Expression ConstExpr
   | ExprConcat [Expression]
   | ExprMultiConcat Expression [Expression] -- a.k.a. "replication operator"
   -- TODO: ExprFunCall
@@ -814,18 +814,18 @@ instance Binary Expression where
                 ExprIndex x1 x2 -> do putWord8 4
                                       put x1
                                       put x2
-                ExprProject x1 x2 x3 -> do putWord8 5
-                                           put x1
-                                           put x2
-                                           put x3
-                ExprProjectPlus x1 x2 x3 -> do putWord8 6
-                                               put x1
-                                               put x2
-                                               put x3
-                ExprProjectMinus x1 x2 x3 -> do putWord8 7
-                                                put x1
-                                                put x2
-                                                put x3
+                ExprSlice x1 x2 x3 -> do putWord8 5
+                                         put x1
+                                         put x2
+                                         put x3
+                ExprSlicePlus x1 x2 x3 -> do putWord8 6
+                                             put x1
+                                             put x2
+                                             put x3
+                ExprSliceMinus x1 x2 x3 -> do putWord8 7
+                                              put x1
+                                              put x2
+                                              put x3
                 ExprConcat x1 -> do putWord8 8
                                     put x1
                 ExprMultiConcat x1 x2 -> do putWord8 9
@@ -860,15 +860,15 @@ instance Binary Expression where
                    5 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprProject x1 x2 x3)
+                           return (ExprSlice x1 x2 x3)
                    6 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprProjectPlus x1 x2 x3)
+                           return (ExprSlicePlus x1 x2 x3)
                    7 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprProjectMinus x1 x2 x3)
+                           return (ExprSliceMinus x1 x2 x3)
                    8 -> do x1 <- get
                            return (ExprConcat x1)
                    9 -> do x1 <- get

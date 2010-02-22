@@ -106,8 +106,14 @@ mk_expr (ExprNum (Just sz) x)
   = V.ExprSizedNum sz x
 mk_expr (ExprVar x)
   = expr_var x
-mk_expr (ExprProject x sz i)
-  = V.ExprProject (mk_ident x) (V.ExprNum (i + sz - 1)) (V.ExprNum i)
+mk_expr (ExprIndex x e)
+  = V.ExprIndex (mk_ident x) (mk_expr e)
+mk_expr (ExprSlice x e1 e2)
+  = V.ExprSlice (mk_ident x) (mk_expr e1) (mk_expr e2)
+mk_expr (ExprSliceOff x e i)
+  = f (mk_ident x) (mk_expr e) (V.ExprNum (abs (fromIntegral i)))
+  where
+    f = if i < 0 then V.ExprSliceMinus else V.ExprSlicePlus
 mk_expr (ExprConcat exprs)
   = V.ExprConcat (map mk_expr exprs)
 -- TODO: in ExprUnary and ExprBinary, check that the op is valid in Verilog
