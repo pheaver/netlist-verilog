@@ -53,7 +53,7 @@ data Module
 type Ident = String
 
 -- size of a wire/mem
-type Size = Integer
+type Size = Int
 
 -- a declaration -- analogous to `module_item' in Verilog formal syntax.
 data Decl

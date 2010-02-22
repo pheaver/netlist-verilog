@@ -226,7 +226,7 @@ data Expression
   -- TODO: support fractional numbers (e.g. 3.14)
   -- TODO: support exponent numbers (e.g. 3e10)
   = ExprNum Integer
-  | ExprSizedNum Integer Integer
+  | ExprSizedNum Int Integer
   | ExprVar Ident
   | ExprString String
   | ExprIndex Ident Expression

@@ -240,7 +240,7 @@ ppExpr' :: Int -> Expression -> Doc
 ppExpr' _ (ExprNum x)
   = integer x
 ppExpr' _ (ExprSizedNum sz x)
-  = integer sz <> tick <> char base_char <> text str
+  = int sz <> tick <> char base_char <> text str
   where
     str = showIntAtBase base (hexdigits !!) x ""
     -- we show everything in hexadecimal, except 1-bit values
