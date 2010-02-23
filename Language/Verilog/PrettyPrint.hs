@@ -163,8 +163,17 @@ ppStatement (NonBlockingAssignment x ctrl expr)
 ppStatement (IfStmt expr stmt1 stmt2)
   = (text "if" <+> parens (ppExpr expr)) `nestStmt` (maybe semi ppStatement stmt1) $$
     case stmt2 of
-      Just stmt -> text "else" `nestStmt` ppStatement stmt
+      Just stmt -> ppElseBranch stmt
       Nothing   -> empty
+  where
+    ppElseBranch (IfStmt e s1 s2)
+      = (text "else if" <+> parens (ppExpr e)) `nestStmt` (maybe semi ppStatement s1) $$
+        case s2 of
+          Just s  -> ppElseBranch s
+          Nothing -> empty
+    ppElseBranch s
+      = text "else" `nestStmt` ppStatement s
+
 ppStatement (CaseStmt expr case_items)
   = text "case" <+> parens (ppExpr expr) $$
     vcat (map ppCaseItem case_items) $$
