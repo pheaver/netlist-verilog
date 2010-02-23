@@ -208,9 +208,6 @@ ppStatement (ForceStmt assignment)
 ppStatement (ReleaseStmt x)
   = text "release" <+> ppLValue x <> semi
 
-ppStatement (Foo x)
-  = text x <> semi
-
 -- a helper for pretty-printing statement.  'fsep' chooses whether to put the
 -- statement on the same line as 'x', or nest it on the next line if it doesn't
 -- fit on the same line.

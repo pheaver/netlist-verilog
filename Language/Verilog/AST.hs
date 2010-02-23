@@ -204,7 +204,6 @@ data Statement
   | DeAssignStmt LValue
   | ForceStmt Assignment
   | ReleaseStmt LValue
-  | Foo String
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data Assignment
@@ -708,8 +707,6 @@ instance Binary Statement where
                                    put x1
                 ReleaseStmt x1 -> do putWord8 15
                                      put x1
-                Foo x1 -> do putWord8 16
-                             put x1
         get
           = do i <- getWord8
                case i of
@@ -763,8 +760,6 @@ instance Binary Statement where
                             return (ForceStmt x1)
                    15 -> do x1 <- get
                             return (ReleaseStmt x1)
-                   16 -> do x1 <- get
-                            return (Foo x1)
                    _ -> error "Corrupted binary data for Statement"
 
  
