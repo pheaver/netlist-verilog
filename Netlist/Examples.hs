@@ -43,4 +43,10 @@ if0 = If e0 s0 $ Just $
     (e0:e1:e2:_) = var_exprs
     (s0:s1:s2:s3:s4:s5:s6:s7:_) = stmts 
 
+if1 :: Stmt
+if1 = If e0 (If e1 s1 Nothing) (Just (If e2 s2 Nothing))
+  where 
+    (e0:e1:e2:_) = var_exprs
+    (_:s1:s2:_) = stmts 
+
 -- -----------------------------------------------------------------------------
