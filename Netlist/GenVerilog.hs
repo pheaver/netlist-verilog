@@ -75,12 +75,12 @@ mk_process_stmt []
 mk_process_stmt [(_, stmt)]
   -- if this is the last one, then we don't have to check the event condition
   = mk_stmt stmt
-mk_process_stmt ((Event ident edge, stmt):xs)
+mk_process_stmt ((Event e edge, stmt):xs)
   = V.IfStmt cond (Just (mk_stmt stmt)) (Just (mk_process_stmt xs))
   where
     cond = case edge of
-             PosEdge -> expr_var ident
-             NegEdge -> V.ExprUnary LNeg (expr_var ident)
+             PosEdge -> (mk_expr e)
+             NegEdge -> V.ExprUnary LNeg (mk_expr e)
 
 -- create a Verilog event expression from a list of triggers.
 -- the list must have at least one 'Event' field in it.
@@ -94,8 +94,8 @@ mk_trigger xs0
     f (Event x edge : xs) = e : f xs
       where
         e = case edge of
-              PosEdge -> V.EventPosedge (expr_var x)
-              NegEdge -> V.EventNegedge (expr_var x)
+              PosEdge -> V.EventPosedge (mk_expr x)
+              NegEdge -> V.EventNegedge (mk_expr x)
               -- AnyEdge -> V.EventExpr (expr_var x)
                          -- V.EventOr (V.EventPosedge (expr_var x)) (V.EventNegedge (expr_var x))
                          -- is this the right thing to do?

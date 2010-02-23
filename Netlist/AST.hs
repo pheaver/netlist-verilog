@@ -101,7 +101,7 @@ data Decl
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data Event
-  = Event Ident Edge
+  = Event Expr Edge
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data Edge

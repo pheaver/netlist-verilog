@@ -19,8 +19,8 @@ ds = [ NetDecl "a" 16 (Just (ExprVar "x"))
      , NetDecl "b" 16 (Just (ExprNum (Just 16) 10))
      , MemDecl "c" 16
      , ProcessDecl
-       [ (Event "reset" PosEdge, Assign (ExprVar "c") (ExprNum (Just 16) 0))
-       , (Event "clk" PosEdge, If (ExprVar "enable")
+       [ (Event (ExprVar "reset") PosEdge, Assign (ExprVar "c") (ExprNum (Just 16) 0))
+       , (Event (ExprVar "clk") PosEdge, If (ExprVar "enable")
                                   (Assign (ExprVar "c") (ExprVar "x"))
                                   Nothing)
        ]
