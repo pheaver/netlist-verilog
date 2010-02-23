@@ -2,6 +2,8 @@
 -- Copyright (c) 2010 Signali Corp.
 -- -----------------------------------------------------------------------------
 
+{-# LANGUAGE ParallelListComp #-}
+
 module Netlist.Examples where
 
 import Netlist.AST
@@ -23,5 +25,22 @@ ds = [ NetDecl "a" 16 (Just (ExprVar "x"))
                                   Nothing)
        ]
      ]
+
+var_exprs :: [Expr]
+var_exprs = [ ExprVar [x] | x <- "abcdefghijklmnopqrstuvwxyz" ]
+
+stmts :: [Stmt]
+stmts = [ Assign x (ExprNum Nothing i) | x <- var_exprs | i <- [0..] ]
+
+if0 :: Stmt
+if0 = If e0 s0 $ Just $
+      If e1 s1' $ Just $
+      If e2 s2' $ Just s3'
+  where
+    s1' = Seq [s1, s2, s3]
+    s2' = Seq [s4, s5, s6]
+    s3' = s7
+    (e0:e1:e2:_) = var_exprs
+    (s0:s1:s2:s3:s4:s5:s6:s7:_) = stmts 
 
 -- -----------------------------------------------------------------------------
