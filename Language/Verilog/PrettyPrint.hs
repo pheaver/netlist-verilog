@@ -59,9 +59,9 @@ ppItem (AssignItem mb_strength mb_delay assignments)
     mb ppDelay mb_delay <+>
     commasep (map ppAssignment assignments) <> semi
 ppItem (InitialItem stmt)
-  = text "initial" $$ nest 2 (ppStatement stmt)
+  = fsep [ text "initial", nest 2 (ppStatement stmt) ]
 ppItem (AlwaysItem stmt)
-  = text "always" $$ nest 2 (ppStatement stmt)
+  = fsep [ text "always", nest 2 (ppStatement stmt) ]
 
 -- -----------------------------------------------------------------------------
 -- 2. Declarations
