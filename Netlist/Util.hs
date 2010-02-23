@@ -10,6 +10,23 @@ import Netlist.AST
 
 -- -----------------------------------------------------------------------------
 
+data Direction = Up | Down
+
+makeRange :: Direction -> Size -> Maybe Range
+makeRange _ 1 = Nothing
+makeRange d sz
+  | sz > 1 
+  = let upper = ExprNum Nothing (fromIntegral (sz - 1))
+        lower = ExprNum Nothing 0
+    in Just $ case d of
+                Up    -> Range lower upper
+                Down  -> Range upper lower
+
+  | otherwise
+  = error ("makeRange: invalid size: " ++ show sz)
+
+-- -----------------------------------------------------------------------------
+
 -- generate a process declaration for a generic register based on the following:
 --  * the register name (as an expression)
 --  * clock expression

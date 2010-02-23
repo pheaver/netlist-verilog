@@ -43,8 +43,8 @@ import Operators
 -- corresponds to a Verilog "module" or VHDL "entity"
 data Module
   = Module { module_name    :: Ident
-           , module_inputs  :: [(Ident, Size)]
-           , module_outputs :: [(Ident, Size)]
+           , module_inputs  :: [(Ident, Maybe Range)]
+           , module_outputs :: [(Ident, Maybe Range)]
            , module_decls   :: [Decl]
            -- TODO: support static parameters (VHDL "generic", Verilog "parameter")
            }
@@ -62,14 +62,18 @@ data Decl
   -- A net (aka 'wire') has a continuously assigned value.  The net can be
   -- declared and assigned at the same time (NetDecl with Just Expr), or
   -- separately (NetDecl with Nothing, and a separate NetAssign).
-  = NetDecl Ident Size (Maybe Expr)
+  = NetDecl Ident (Maybe Range) (Maybe Expr)
   | NetAssign Ident Expr
 
   -- A mem (aka 'reg') is stateful.  it can be assigned by a non-blocking
   -- assignment (or blocking, but we don't support those yet) within a process.
-  -- TODO: support 2-dimensional memories
   -- TODO: support optional initial value
-  | MemDecl Ident Size
+
+  -- The first range is the most significant dimension.
+  -- So, MemDecl x (0, 31) (7, 0) corresponds to the following in Verilog:
+  --    reg [7:0] x [0:31]
+
+  | MemDecl Ident (Maybe Range) (Maybe Range)
 
   -- a module/entity instantiation
   | InstDecl Ident            -- name of the module
@@ -99,6 +103,12 @@ data Decl
   | InitProcessDecl Stmt
 
   deriving (Eq, Ord, Show, Data, Typeable)
+
+data Range
+  = Range ConstExpr ConstExpr
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+type ConstExpr = Expr
 
 data Event
   = Event Expr Edge
@@ -177,9 +187,10 @@ instance Binary Decl where
                 NetAssign x1 x2 -> do putWord8 1
                                       put x1
                                       put x2
-                MemDecl x1 x2 -> do putWord8 2
-                                    put x1
-                                    put x2
+                MemDecl x1 x2 x3 -> do putWord8 2
+                                       put x1
+                                       put x2
+                                       put x3
                 InstDecl x1 x2 x3 x4 x5 -> do putWord8 3
                                               put x1
                                               put x2
@@ -202,7 +213,8 @@ instance Binary Decl where
                            return (NetAssign x1 x2)
                    2 -> do x1 <- get
                            x2 <- get
-                           return (MemDecl x1 x2)
+                           x3 <- get
+                           return (MemDecl x1 x2 x3)
                    3 -> do x1 <- get
                            x2 <- get
                            x3 <- get
@@ -214,6 +226,16 @@ instance Binary Decl where
                    5 -> do x1 <- get
                            return (InitProcessDecl x1)
                    _ -> error "Corrupted binary data for Decl"
+
+ 
+instance Binary Range where
+        put (Range x1 x2)
+          = do put x1
+               put x2
+        get
+          = do x1 <- get
+               x2 <- get
+               return (Range x1 x2)
 
  
 instance Binary Event where

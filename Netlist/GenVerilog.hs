@@ -23,30 +23,30 @@ mk_module (Module name ins outs decls)
   = V.Module (mk_ident name) ports items
   where
     ports = map (mk_ident . fst) ins ++ map (mk_ident . fst) outs
-    items = [ V.InputDeclItem (V.InputDecl (size2MaybeRange sz) [mk_ident x])
-              | (x, sz) <- ins ] ++
+    items = [ V.InputDeclItem (V.InputDecl (fmap mk_range mb_range) [mk_ident x])
+              | (x, mb_range) <- ins ] ++
 
-            [ V.OutputDeclItem (V.OutputDecl (size2MaybeRange sz) [mk_ident x])
-              | (x, sz) <- outs ] ++
+            [ V.OutputDeclItem (V.OutputDecl (fmap mk_range mb_range) [mk_ident x])
+              | (x, mb_range) <- outs ] ++
 
             concatMap mk_decl decls
              
 
 mk_decl :: Decl -> [V.Item]
-mk_decl (NetDecl x sz mb_expr)
+mk_decl (NetDecl x mb_range mb_expr)
   = [V.NetDeclItem decl]
   where
-    mb_range = fmap V.SimpleRange (size2MaybeRange sz)
+    mb_range' = fmap (V.SimpleRange . mk_range) mb_range
     decl = case mb_expr of
-             Nothing   -> V.NetDecl "wire" mb_range Nothing [mk_ident x]
-             Just expr -> V.NetDeclAssign "wire" Nothing mb_range Nothing [mkAssign x expr]
+             Nothing   -> V.NetDecl "wire" mb_range' Nothing [mk_ident x]
+             Just expr -> V.NetDeclAssign "wire" Nothing mb_range' Nothing [mkAssign x expr]
 
 mk_decl (NetAssign x expr)
   = [V.AssignItem Nothing Nothing [mkAssign x expr]]
 
-mk_decl (MemDecl x sz)
-  = [V.RegDeclItem (V.RegDecl (size2MaybeRange sz)
-                    [V.RegVar (mk_ident x) Nothing])]
+mk_decl (MemDecl x mb_range1 mb_range2)
+  = [V.RegDeclItem (V.RegDecl (fmap mk_range mb_range2)
+                    [V.RegVar (mk_ident x) (fmap mk_range mb_range1)])]
 
 mk_decl (InstDecl mod_name inst_name params inputs outputs)
   = [V.ModuleInstItem (V.ModuleInst (mk_ident mod_name) v_params [inst])]
@@ -68,6 +68,10 @@ mk_decl (ProcessDecl xs)
   where
     s = mk_process_stmt xs
     e = V.EventControl (mk_trigger (map fst xs))
+
+mk_range :: Range -> V.Range
+mk_range (Range e1 e2)
+  = V.Range (mk_expr e1) (mk_expr e2)
 
 mk_process_stmt :: [(Event, Stmt)] -> V.Statement
 mk_process_stmt []
@@ -149,16 +153,6 @@ mk_ident x = V.Ident x
 
 expr_var :: Ident -> V.Expression
 expr_var x = V.ExprVar (mk_ident x)
-
--- -----------------------------------------------------------------------------
-
-size2MaybeRange :: Size -> Maybe V.Range
-size2MaybeRange 1 = Nothing
-size2MaybeRange sz
-  | sz > 1 
-  = Just (V.Range (V.ExprNum (fromIntegral (sz - 1))) (V.ExprNum 0))
-  | otherwise
-  = error ("size2MaybeRange: invalid size: " ++ show sz)
 
 mkAssign :: Ident -> Expr -> V.Assignment
 mkAssign ident expr
