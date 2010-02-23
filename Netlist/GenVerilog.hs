@@ -30,12 +30,12 @@ mk_module (Module name ins outs decls)
 
 mk_decl :: Decl -> [V.Item]
 mk_decl (NetDecl x sz mb_expr)
-  = [V.NetDeclItem (V.NetDeclAssign "wire" Nothing mb_range Nothing assigns)]
+  = [V.NetDeclItem decl]
   where
     mb_range = fmap V.SimpleRange (size2MaybeRange sz)
-    assigns  = case mb_expr of
-                Just expr -> [mkAssign x expr]
-                Nothing   -> []
+    decl = case mb_expr of
+             Nothing   -> V.NetDecl "wire" mb_range Nothing [mk_ident x]
+             Just expr -> V.NetDeclAssign "wire" Nothing mb_range Nothing [mkAssign x expr]
 
 mk_decl (NetAssign x expr)
   = [V.AssignItem Nothing Nothing [mkAssign x expr]]
