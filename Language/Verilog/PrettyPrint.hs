@@ -160,6 +160,14 @@ ppStatement (BlockingAssignment x ctrl expr)
   = ppLValue x <+> equals <+> mb ppDelayOrEventControl ctrl <+> ppExpr expr <> semi
 ppStatement (NonBlockingAssignment x ctrl expr)
   = ppLValue x <+> text "<=" <+> mb ppDelayOrEventControl ctrl <+> ppExpr expr <> semi
+
+-- we have to add a begin-end pair in order to avoid ambiguity, otherwise in the
+-- concrete syntax the else-branch (if2) will be associated with if1 instead of
+-- the outer if-statement.
+ppStatement (IfStmt expr (Just if1@IfStmt {}) (Just if2@IfStmt {}))
+  = ppStatement (IfStmt expr (Just if1') (Just if2))
+  where
+    if1' = SeqBlock Nothing [] [if1]
 ppStatement (IfStmt expr stmt1 stmt2)
   = (text "if" <+> parens (ppExpr expr)) `nestStmt` (maybe semi ppStatement stmt1) $$
     case stmt2 of
