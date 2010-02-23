@@ -39,7 +39,7 @@ ppModule :: Description -> Doc
 ppModule (Module name ports body)
   = text "module" <+> ppIdent name <+> parens (ppIdents ports) <> semi $$
     nest 2 (vcat (map ppItem body)) $$
-    text "endmodule"
+    text "endmodule" <> char '\n'
 
 ppItem :: Item -> Doc
 ppItem (ParamDeclItem x)   = ppParamDecl x
