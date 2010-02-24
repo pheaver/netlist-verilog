@@ -135,6 +135,7 @@ data Expr
   -- terminal nodes
   = ExprNum (Maybe Size) Integer
   | ExprVar Ident
+  | ExprString String
   -- recursive nodes
   | ExprIndex Ident Expr          -- x[e]
   | ExprSlice Ident Expr Expr     -- x[e1 : e2]
@@ -269,31 +270,33 @@ instance Binary Expr where
                                     put x2
                 ExprVar x1 -> do putWord8 1
                                  put x1
-                ExprIndex x1 x2 -> do putWord8 2
+                ExprString x1 -> do putWord8 2
+                                    put x1
+                ExprIndex x1 x2 -> do putWord8 3
                                       put x1
                                       put x2
-                ExprSlice x1 x2 x3 -> do putWord8 3
+                ExprSlice x1 x2 x3 -> do putWord8 4
                                          put x1
                                          put x2
                                          put x3
-                ExprSliceOff x1 x2 x3 -> do putWord8 4
+                ExprSliceOff x1 x2 x3 -> do putWord8 5
                                             put x1
                                             put x2
                                             put x3
-                ExprConcat x1 -> do putWord8 5
+                ExprConcat x1 -> do putWord8 6
                                     put x1
-                ExprCond x1 x2 x3 -> do putWord8 6
+                ExprCond x1 x2 x3 -> do putWord8 7
                                         put x1
                                         put x2
                                         put x3
-                ExprUnary x1 x2 -> do putWord8 7
+                ExprUnary x1 x2 -> do putWord8 8
                                       put x1
                                       put x2
-                ExprBinary x1 x2 x3 -> do putWord8 8
+                ExprBinary x1 x2 x3 -> do putWord8 9
                                           put x1
                                           put x2
                                           put x3
-                ExprFunCall x1 x2 -> do putWord8 9
+                ExprFunCall x1 x2 -> do putWord8 10
                                         put x1
                                         put x2
         get
@@ -305,32 +308,34 @@ instance Binary Expr where
                    1 -> do x1 <- get
                            return (ExprVar x1)
                    2 -> do x1 <- get
-                           x2 <- get
-                           return (ExprIndex x1 x2)
+                           return (ExprString x1)
                    3 -> do x1 <- get
                            x2 <- get
-                           x3 <- get
-                           return (ExprSlice x1 x2 x3)
+                           return (ExprIndex x1 x2)
                    4 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprSliceOff x1 x2 x3)
+                           return (ExprSlice x1 x2 x3)
                    5 -> do x1 <- get
-                           return (ExprConcat x1)
+                           x2 <- get
+                           x3 <- get
+                           return (ExprSliceOff x1 x2 x3)
                    6 -> do x1 <- get
+                           return (ExprConcat x1)
+                   7 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprCond x1 x2 x3)
-                   7 -> do x1 <- get
+                   8 -> do x1 <- get
                            x2 <- get
                            return (ExprUnary x1 x2)
-                   8 -> do x1 <- get
+                   9 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprBinary x1 x2 x3)
-                   9 -> do x1 <- get
-                           x2 <- get
-                           return (ExprFunCall x1 x2)
+                   10 -> do x1 <- get
+                            x2 <- get
+                            return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expr"
 
  

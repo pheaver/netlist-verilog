@@ -126,6 +126,8 @@ mk_expr (ExprNum Nothing x)
   = V.ExprNum x
 mk_expr (ExprNum (Just sz) x)
   = V.ExprSizedNum sz x
+mk_expr (ExprString x)
+  = V.ExprString x
 mk_expr (ExprVar x)
   = expr_var x
 mk_expr (ExprIndex x e)
