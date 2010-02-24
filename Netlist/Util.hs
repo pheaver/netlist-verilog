@@ -31,16 +31,17 @@ makeRange d sz
 --  * the register name (as an expression)
 --  * clock expression
 --  * width of the register
---  * length of the delay in clock cycles (> 1 requires name generation)
 --  * optional asynchronous reset and initial value
 --  * optional clock enable
 --  * optional synchronous restart and initial value
 --  * optional load enable
 --  * when enabled, the expression to assign to the identifier
+-- You can implement a shift register by passing in a concatenation for the
+-- register expression and the input expression, though that is not compatible
+-- with VHDL.
 -- TODO
 --  * support negative-edge triggered clock/reset, active-low reset/restart
 --  * support true clock enable (as opposed to load enable)?
---  * support delay amount > 1
 
 generateReg :: Expr -> Expr -> Maybe (Expr, Expr) -> Maybe (Expr, Expr) ->
                Maybe Expr -> Expr -> Decl
