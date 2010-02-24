@@ -19,8 +19,8 @@ entity m = text "entity" <+> text (module_name m) <+> text "is" $$
             text "end" <+> text "entity" <> semi
 
   where name = text (module_name m)
-        ports = [text i <+> colon <+> text "in" <+> slv_type (s-1) 0 | (i,s) <- module_inputs m ] ++
-                [text i <+> colon <+> text "out" <+> slv_type (s-1) 0 | (i,s) <- module_outputs m ]
+        ports = [text i <+> colon <+> text "in" <+> slv_type ran | (i,ran) <- module_inputs m ] ++
+                [text i <+> colon <+> text "out" <+> slv_type ran | (i,ran) <- module_outputs m ]
 
 
 architecture :: Module -> Doc
@@ -34,12 +34,12 @@ architecture m = text "architecture" <+> text "synth" <+> text "of" <+>  text (m
 decls :: [Decl] -> Doc
 decls [] = empty
 decls ds = (vcat $ punctuate semi $ catMaybes $ map decl ds) <> semi
-decl (NetDecl i size Nothing) = Just $
-  text "signal" <+> text i <+> colon <+> slv_type (size - 1) 0
+decl (NetDecl i r Nothing) = Just $
+  text "signal" <+> text i <+> colon <+> slv_type r
 
-decl (NetDecl i size (Just init)) = Just $
-  text "signal" <+> text i <+> colon <+> slv_type (size - 1) 0 <+> text ":=" <+> expr init
-decl (MemDecl i size) = Just $
+decl (NetDecl i r (Just init)) = Just $
+  text "signal" <+> text i <+> colon <+> slv_type r <+> text ":=" <+> expr init
+decl (MemDecl i asize dsize) = Just $
   text "type" <+> mtype  <+> text "is" <+>
        text "array" <+> text "range" <+> text "of" <+> text "ldots" <> semi $$
   text "signal" <+> text i <+> colon <+> mtype
@@ -99,8 +99,8 @@ pstmts ss = (vcat $ zipWith mkIf is ss) $$ (text "else" <+> text "null") <> semi
                        nest 2 (stmt s)
 
 
-event (Event i PosEdge) = text "rising_edge" <> parens (text i)
-event (Event i NegEdge) = text "falling_edge" <> parens (text i)
+event (Event i PosEdge) = text "rising_edge" <> parens (expr i)
+event (Event i NegEdge) = text "falling_edge" <> parens (expr i)
 
 stmt (Assign l r) = expr l <+> text "<=" <+> expr r
 stmt (Seq ss) = vcat (punctuate semi (map stmt ss)) <> semi
@@ -114,6 +114,16 @@ stmt (If p t (Just e)) =
   text "else" $$
   nest 2 (stmt e) $$
   text "end if" <> semi
+stmt (Case d ps def) =
+    text "case" <+> expr d <+> text "of" $$
+    vcat (map mkAlt ps) $$
+    defDoc $$
+    text "end case" <> semi
+  where defDoc = maybe empty mkDefault def
+        mkDefault s = text "when others =>" $$
+                      nest 2 (stmt s)
+        mkAlt ([g],s) = text "when" <+> expr g <+> text "=>" $$
+                        nest 2 (stmt s)
 
 
 
@@ -123,12 +133,14 @@ expr (ExprNum (Just s) i) =
 expr (ExprVar n) = text n
 expr (ExprIndex s i) = text s <> parens (expr i)
 expr (ExprSlice s h l)
-  | h > l = text s <> parens (expr h <+> text "downto" <+> expr l)
-  | otherwise = text s <> parens (expr h <+> text "upto" <+> expr l)
+  | h >= l = text s <> parens (expr h <+> text "downto" <+> expr l)
+  | otherwise = text s <> parens (expr h <+> text "to" <+> expr l)
 
-expr (ExprConcat ss) = hcat $ punctuate (text "&") (map expr ss)
+expr (ExprConcat ss) = hcat $ punctuate (text " & ") (map expr ss)
 expr (ExprUnary op e) = lookupUnary op (expr e)
 expr (ExprBinary op a b) = lookupBinary op (expr a) (expr b)
+expr (ExprFunCall f args) = text f <> parens (cat $ punctuate comma $ map expr args)
+expr (ExprCond c t e) = expr t <+> text "when" <+> expr c <+> text "else" <+> expr e
 expr x = text (show x)
 
 
@@ -142,6 +154,7 @@ unOp UOr = "or"
 unOp UNor = "nor"
 unOp UXor = "xor"
 unOp UXnor = "xnor"
+unOp Neg = "-"
 
 
 -- "(\\(.*\\), text \\(.*\\)),"
@@ -176,8 +189,7 @@ binOp RotateLeft = "rotl"
 binOp RotateRight = "rotr"
 
 
+slv_type r =  text "std_logic_vector" <>
+              (maybe empty range r)
 
-slv_type high low = text "std_logic_vector" <>
-                    range high low
-
-range high low = parens (int (fromIntegral high) <+> text "downto" <+> int (fromIntegral low))
+range (Range high low) = parens (expr high <+> text "downto" <+> expr low)
