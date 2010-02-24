@@ -122,10 +122,12 @@ mk_stmt (Seq stmts)
   = V.SeqBlock Nothing [] (map mk_stmt stmts)
 
 mk_expr :: Expr -> V.Expression
-mk_expr (ExprNum Nothing x)
+mk_expr (ExprNum x)
   = V.ExprNum x
-mk_expr (ExprNum (Just sz) x)
-  = V.ExprSizedNum sz x
+mk_expr (ExprLit sz x)
+  = V.ExprLit sz x
+mk_expr (ExprBit x)
+  = V.ExprLit 1 (fromIntegral x)
 mk_expr (ExprString x)
   = V.ExprString x
 mk_expr (ExprVar x)

@@ -232,7 +232,7 @@ data Expression
   -- TODO: support fractional numbers (e.g. 3.14)
   -- TODO: support exponent numbers (e.g. 3e10)
   = ExprNum Integer
-  | ExprSizedNum Int Integer
+  | ExprLit Int Integer
   | ExprVar Ident
   | ExprString String
   | ExprIndex Ident Expression
@@ -830,9 +830,9 @@ instance Binary Expression where
           = case x of
                 ExprNum x1 -> do putWord8 0
                                  put x1
-                ExprSizedNum x1 x2 -> do putWord8 1
-                                         put x1
-                                         put x2
+                ExprLit x1 x2 -> do putWord8 1
+                                    put x1
+                                    put x2
                 ExprVar x1 -> do putWord8 2
                                  put x1
                 ExprString x1 -> do putWord8 3
@@ -878,7 +878,7 @@ instance Binary Expression where
                            return (ExprNum x1)
                    1 -> do x1 <- get
                            x2 <- get
-                           return (ExprSizedNum x1 x2)
+                           return (ExprLit x1 x2)
                    2 -> do x1 <- get
                            return (ExprVar x1)
                    3 -> do x1 <- get

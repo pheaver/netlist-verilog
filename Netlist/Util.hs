@@ -16,8 +16,8 @@ makeRange :: Direction -> Size -> Maybe Range
 makeRange _ 1 = Nothing
 makeRange d sz
   | sz > 1 
-  = let upper = ExprNum Nothing (fromIntegral (sz - 1))
-        lower = ExprNum Nothing 0
+  = let upper = ExprNum (fromIntegral (sz - 1))
+        lower = ExprNum 0
     in Just $ case d of
                 Up    -> Range lower upper
                 Down  -> Range upper lower

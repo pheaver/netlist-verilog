@@ -263,7 +263,7 @@ ppExpr = ppExpr' 0
 ppExpr' :: Int -> Expression -> Doc
 ppExpr' _ (ExprNum x)
   = integer x
-ppExpr' _ (ExprSizedNum sz x)
+ppExpr' _ (ExprLit sz x)
   = int sz <> tick <> char base_char <> text str
   where
     str = showIntAtBase base (hexdigits !!) x ""

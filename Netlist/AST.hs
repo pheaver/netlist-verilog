@@ -133,9 +133,11 @@ data Edge
 
 data Expr
   -- terminal nodes
-  = ExprNum (Maybe Size) Integer
+  = ExprNum Integer               -- un unsized number
+  | ExprLit Size Integer          -- a sized bitvector
+  | ExprBit Int                   -- in vhdl, bits are different than 1-bit bitvectors
   | ExprVar Ident
-  | ExprString String
+  | ExprString String             -- a quoted string (useful for parameters)
   -- recursive nodes
   | ExprIndex Ident Expr          -- x[e]
   | ExprSlice Ident Expr Expr     -- x[e1 : e2]
@@ -265,75 +267,83 @@ instance Binary Edge where
 instance Binary Expr where
         put x
           = case x of
-                ExprNum x1 x2 -> do putWord8 0
+                ExprNum x1 -> do putWord8 0
+                                 put x1
+                ExprLit x1 x2 -> do putWord8 1
                                     put x1
                                     put x2
-                ExprVar x1 -> do putWord8 1
+                ExprBit x1 -> do putWord8 2
                                  put x1
-                ExprString x1 -> do putWord8 2
+                ExprVar x1 -> do putWord8 3
+                                 put x1
+                ExprString x1 -> do putWord8 4
                                     put x1
-                ExprIndex x1 x2 -> do putWord8 3
+                ExprIndex x1 x2 -> do putWord8 5
                                       put x1
                                       put x2
-                ExprSlice x1 x2 x3 -> do putWord8 4
+                ExprSlice x1 x2 x3 -> do putWord8 6
                                          put x1
                                          put x2
                                          put x3
-                ExprSliceOff x1 x2 x3 -> do putWord8 5
+                ExprSliceOff x1 x2 x3 -> do putWord8 7
                                             put x1
                                             put x2
                                             put x3
-                ExprConcat x1 -> do putWord8 6
+                ExprConcat x1 -> do putWord8 8
                                     put x1
-                ExprCond x1 x2 x3 -> do putWord8 7
+                ExprCond x1 x2 x3 -> do putWord8 9
                                         put x1
                                         put x2
                                         put x3
-                ExprUnary x1 x2 -> do putWord8 8
+                ExprUnary x1 x2 -> do putWord8 10
                                       put x1
                                       put x2
-                ExprBinary x1 x2 x3 -> do putWord8 9
+                ExprBinary x1 x2 x3 -> do putWord8 11
                                           put x1
                                           put x2
                                           put x3
-                ExprFunCall x1 x2 -> do putWord8 10
+                ExprFunCall x1 x2 -> do putWord8 12
                                         put x1
                                         put x2
         get
           = do i <- getWord8
                case i of
                    0 -> do x1 <- get
-                           x2 <- get
-                           return (ExprNum x1 x2)
+                           return (ExprNum x1)
                    1 -> do x1 <- get
-                           return (ExprVar x1)
+                           x2 <- get
+                           return (ExprLit x1 x2)
                    2 -> do x1 <- get
-                           return (ExprString x1)
+                           return (ExprBit x1)
                    3 -> do x1 <- get
+                           return (ExprVar x1)
+                   4 -> do x1 <- get
+                           return (ExprString x1)
+                   5 -> do x1 <- get
                            x2 <- get
                            return (ExprIndex x1 x2)
-                   4 -> do x1 <- get
+                   6 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprSlice x1 x2 x3)
-                   5 -> do x1 <- get
-                           x2 <- get
-                           x3 <- get
-                           return (ExprSliceOff x1 x2 x3)
-                   6 -> do x1 <- get
-                           return (ExprConcat x1)
                    7 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprCond x1 x2 x3)
+                           return (ExprSliceOff x1 x2 x3)
                    8 -> do x1 <- get
-                           x2 <- get
-                           return (ExprUnary x1 x2)
+                           return (ExprConcat x1)
                    9 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprBinary x1 x2 x3)
+                           return (ExprCond x1 x2 x3)
                    10 -> do x1 <- get
+                            x2 <- get
+                            return (ExprUnary x1 x2)
+                   11 -> do x1 <- get
+                            x2 <- get
+                            x3 <- get
+                            return (ExprBinary x1 x2 x3)
+                   12 -> do x1 <- get
                             x2 <- get
                             return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expr"

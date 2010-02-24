@@ -21,10 +21,10 @@ t = Module "foo" (f ins) (f outs) ds
 
 ds :: [Decl]
 ds = [ NetDecl "a" (makeRange Down 16) (Just (ExprVar "x"))
-     , NetDecl "b" (makeRange Down 16) (Just (ExprNum (Just 16) 10))
+     , NetDecl "b" (makeRange Down 16) (Just (ExprLit 16 10))
      , MemDecl "c" Nothing (makeRange Down 16)
      , ProcessDecl
-       [ (Event (ExprVar "reset") PosEdge, Assign (ExprVar "c") (ExprNum (Just 16) 0))
+       [ (Event (ExprVar "reset") PosEdge, Assign (ExprVar "c") (ExprLit 16 0))
        , (Event (ExprVar "clk") PosEdge, If (ExprVar "enable")
                                   (Assign (ExprVar "c") (ExprVar "x"))
                                   Nothing)
@@ -35,7 +35,7 @@ var_exprs :: [Expr]
 var_exprs = [ ExprVar [x] | x <- "abcdefghijklmnopqrstuvwxyz" ]
 
 stmts :: [Stmt]
-stmts = [ Assign x (ExprNum Nothing i) | x <- var_exprs | i <- [0..] ]
+stmts = [ Assign x (ExprNum i) | x <- var_exprs | i <- [0..] ]
 
 if0 :: Stmt
 if0 = If e0 s0 $ Just $
