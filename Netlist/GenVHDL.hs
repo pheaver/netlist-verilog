@@ -39,6 +39,10 @@ decl (NetDecl i r Nothing) = Just $
 
 decl (NetDecl i r (Just init)) = Just $
   text "signal" <+> text i <+> colon <+> slv_type r <+> text ":=" <+> expr init
+
+decl (MemDecl i Nothing dsize) = Just $
+    text "signal" <+> text i <+> colon <+> slv_type dsize
+
 decl (MemDecl i asize dsize) = Just $
   text "type" <+> mtype  <+> text "is" <+>
        text "array" <+> text "range" <+> text "of" <+> text "ldots" <> semi $$
@@ -127,9 +131,11 @@ stmt (Case d ps def) =
 
 
 
-expr (ExprNum Nothing i) = int $ fromIntegral i
-expr (ExprNum (Just s) i) =
-  text "to_unsigned" <> parens (int s <> comma <> int s)
+expr (ExprNum i) = int $ fromIntegral i
+expr (ExprBit x) = quotes (int x)
+expr (ExprLit 1 val) = quotes (integer val)
+expr (ExprLit size val) =
+  text "std_logic_vector" <> parens (integer val <> comma <+> int size)
 expr (ExprVar n) = text n
 expr (ExprIndex s i) = text s <> parens (expr i)
 expr (ExprSlice s h l)
