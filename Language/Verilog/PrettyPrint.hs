@@ -58,8 +58,12 @@ ppItem (AssignItem mb_strength mb_delay assignments)
     mb ppDriveStrength mb_strength <+>
     mb ppDelay mb_delay <+>
     commasep (map ppAssignment assignments) <> semi
+ppItem (InitialItem (DelayOrEventControlStmt ctrl stmt))
+  = fsep [ text "initial", ppDelayOrEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
 ppItem (InitialItem stmt)
   = fsep [ text "initial", nest 2 (ppStatement stmt) ]
+ppItem (AlwaysItem (DelayOrEventControlStmt ctrl stmt))
+  = fsep [ text "always", ppDelayOrEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
 ppItem (AlwaysItem stmt)
   = fsep [ text "always", nest 2 (ppStatement stmt) ]
 
