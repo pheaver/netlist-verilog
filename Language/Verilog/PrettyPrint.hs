@@ -296,7 +296,7 @@ ppExpr' prec (ExprBinary op expr1 expr2)
   = if prec > op_prec then parens e else e
   where
     e = fsep [ppExpr' op_prec expr1, text x, ppExpr' (op_prec + 1) expr2 ]
-    (x, op_prec) = lookupOp op binary_op_table    
+    (x, op_prec) = lookupOp op binary_op_table
 ppExpr' prec (ExprCond e1 e2 e3)
   = if prec > cond_prec then parens e else e
   where
@@ -360,7 +360,7 @@ ppDelayOrEventControl (DelayControl x)
 ppDelayOrEventControl (EventControl x)
   = ppEventControl x
 ppDelayOrEventControl (RepeatControl expr x)
-  = text "repeat" <+> parens (ppExpr expr) <+> ppEventControl x 
+  = text "repeat" <+> parens (ppExpr expr) <+> ppEventControl x
 
 ppDelayControl :: DelayControl -> Doc
 ppDelayControl = ppDelay

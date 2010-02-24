@@ -59,7 +59,7 @@ data Item
   | EventDeclItem EventDecl
   -- TODO: GateDecl
   -- TODO: UDPInst
-  | ModuleInstItem ModuleInst 
+  | ModuleInstItem ModuleInst
   -- TODO: ParamOverride
   | AssignItem (Maybe DriveStrength) (Maybe Delay) [Assignment]
   -- TODO: SpecifyBlock
@@ -340,21 +340,21 @@ net_types
 -- -----------------------------------------------------------------------------
 -- GENERATED START
 
- 
+
 instance Binary Ident where
         put (Ident x1) = put x1
         get
           = do x1 <- get
                return (Ident x1)
 
- 
+
 instance Binary Verilog where
         put (Verilog x1) = put x1
         get
           = do x1 <- get
                return (Verilog x1)
 
- 
+
 instance Binary Module where
         put (Module x1 x2 x3)
           = do put x1
@@ -366,7 +366,7 @@ instance Binary Module where
                x3 <- get
                return (Module x1 x2 x3)
 
- 
+
 instance Binary Item where
         put x
           = case x of
@@ -435,14 +435,14 @@ instance Binary Item where
                             return (AlwaysItem x1)
                    _ -> error "Corrupted binary data for Item"
 
- 
+
 instance Binary ParamDecl where
         put (ParamDecl x1) = put x1
         get
           = do x1 <- get
                return (ParamDecl x1)
 
- 
+
 instance Binary InputDecl where
         put (InputDecl x1 x2)
           = do put x1
@@ -452,7 +452,7 @@ instance Binary InputDecl where
                x2 <- get
                return (InputDecl x1 x2)
 
- 
+
 instance Binary OutputDecl where
         put (OutputDecl x1 x2)
           = do put x1
@@ -462,7 +462,7 @@ instance Binary OutputDecl where
                x2 <- get
                return (OutputDecl x1 x2)
 
- 
+
 instance Binary InOutDecl where
         put (InOutDecl x1 x2)
           = do put x1
@@ -472,7 +472,7 @@ instance Binary InOutDecl where
                x2 <- get
                return (InOutDecl x1 x2)
 
- 
+
 instance Binary NetDecl where
         put x
           = case x of
@@ -503,7 +503,7 @@ instance Binary NetDecl where
                            return (NetDeclAssign x1 x2 x3 x4 x5)
                    _ -> error "Corrupted binary data for NetDecl"
 
- 
+
 instance Binary RegDecl where
         put (RegDecl x1 x2)
           = do put x1
@@ -513,35 +513,35 @@ instance Binary RegDecl where
                x2 <- get
                return (RegDecl x1 x2)
 
- 
+
 instance Binary TimeDecl where
         put (TimeDecl x1) = put x1
         get
           = do x1 <- get
                return (TimeDecl x1)
 
- 
+
 instance Binary IntegerDecl where
         put (IntegerDecl x1) = put x1
         get
           = do x1 <- get
                return (IntegerDecl x1)
 
- 
+
 instance Binary RealDecl where
         put (RealDecl x1) = put x1
         get
           = do x1 <- get
                return (RealDecl x1)
 
- 
+
 instance Binary EventDecl where
         put (EventDecl x1) = put x1
         get
           = do x1 <- get
                return (EventDecl x1)
 
- 
+
 instance Binary GateDecl where
         put (GateDecl x1 x2 x3 x4)
           = do put x1
@@ -555,7 +555,7 @@ instance Binary GateDecl where
                x4 <- get
                return (GateDecl x1 x2 x3 x4)
 
- 
+
 instance Binary GateInst where
         put (GateInst x1 x2)
           = do put x1
@@ -565,7 +565,7 @@ instance Binary GateInst where
                x2 <- get
                return (GateInst x1 x2)
 
- 
+
 instance Binary GateInstName where
         put (GateInstName x1 x2)
           = do put x1
@@ -575,7 +575,7 @@ instance Binary GateInstName where
                x2 <- get
                return (GateInstName x1 x2)
 
- 
+
 instance Binary Terminal where
         put x
           = case x of
@@ -592,7 +592,7 @@ instance Binary Terminal where
                            return (IdentTerminal x1)
                    _ -> error "Corrupted binary data for Terminal"
 
- 
+
 instance Binary ModuleInst where
         put (ModuleInst x1 x2 x3)
           = do put x1
@@ -604,7 +604,7 @@ instance Binary ModuleInst where
                x3 <- get
                return (ModuleInst x1 x2 x3)
 
- 
+
 instance Binary Parameter where
         put (Parameter x1 x2)
           = do put x1
@@ -614,7 +614,7 @@ instance Binary Parameter where
                x2 <- get
                return (Parameter x1 x2)
 
- 
+
 instance Binary Instance where
         put (Instance x1 x2 x3)
           = do put x1
@@ -626,7 +626,7 @@ instance Binary Instance where
                x3 <- get
                return (Instance x1 x2 x3)
 
- 
+
 instance Binary Connections where
         put x
           = case x of
@@ -643,7 +643,7 @@ instance Binary Connections where
                            return (NamedConnections x1)
                    _ -> error "Corrupted binary data for Connections"
 
- 
+
 instance Binary NamedConnection where
         put (NamedConnection x1 x2)
           = do put x1
@@ -653,7 +653,7 @@ instance Binary NamedConnection where
                x2 <- get
                return (NamedConnection x1 x2)
 
- 
+
 instance Binary Statement where
         put x
           = case x of
@@ -762,7 +762,7 @@ instance Binary Statement where
                             return (ReleaseStmt x1)
                    _ -> error "Corrupted binary data for Statement"
 
- 
+
 instance Binary Assignment where
         put (Assignment x1 x2)
           = do put x1
@@ -772,7 +772,7 @@ instance Binary Assignment where
                x2 <- get
                return (Assignment x1 x2)
 
- 
+
 instance Binary CaseItem where
         put x
           = case x of
@@ -791,7 +791,7 @@ instance Binary CaseItem where
                            return (CaseDefault x1)
                    _ -> error "Corrupted binary data for CaseItem"
 
- 
+
 instance Binary BlockDecl where
         put x
           = case x of
@@ -824,7 +824,7 @@ instance Binary BlockDecl where
                            return (EventDeclBlock x1)
                    _ -> error "Corrupted binary data for BlockDecl"
 
- 
+
 instance Binary Expression where
         put x
           = case x of
@@ -919,7 +919,7 @@ instance Binary Expression where
                             return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expression"
 
- 
+
 instance Binary ParamAssign where
         put (ParamAssign x1 x2)
           = do put x1
@@ -929,7 +929,7 @@ instance Binary ParamAssign where
                x2 <- get
                return (ParamAssign x1 x2)
 
- 
+
 instance Binary ExpandRange where
         put x
           = case x of
@@ -950,7 +950,7 @@ instance Binary ExpandRange where
                            return (VectoredRange x1)
                    _ -> error "Corrupted binary data for ExpandRange"
 
- 
+
 instance Binary Range where
         put (Range x1 x2)
           = do put x1
@@ -960,7 +960,7 @@ instance Binary Range where
                x2 <- get
                return (Range x1 x2)
 
- 
+
 instance Binary RegVar where
         put (RegVar x1 x2)
           = do put x1
@@ -970,7 +970,7 @@ instance Binary RegVar where
                x2 <- get
                return (RegVar x1 x2)
 
- 
+
 instance Binary DelayOrEventControl where
         put x
           = case x of
@@ -993,7 +993,7 @@ instance Binary DelayOrEventControl where
                            return (RepeatControl x1 x2)
                    _ -> error "Corrupted binary data for DelayOrEventControl"
 
- 
+
 instance Binary EventExpr where
         put x
           = case x of
@@ -1020,7 +1020,7 @@ instance Binary EventExpr where
                            return (EventOr x1 x2)
                    _ -> error "Corrupted binary data for EventExpr"
 
- 
+
 instance Binary DriveStrength where
         put x
           = case x of

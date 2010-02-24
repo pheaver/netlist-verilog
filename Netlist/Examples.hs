@@ -46,12 +46,12 @@ if0 = If e0 s0 $ Just $
     s2' = Seq [s4, s5, s6]
     s3' = s7
     (e0:e1:e2:_) = var_exprs
-    (s0:s1:s2:s3:s4:s5:s6:s7:_) = stmts 
+    (s0:s1:s2:s3:s4:s5:s6:s7:_) = stmts
 
 if1 :: Stmt
 if1 = If e0 (If e1 s1 Nothing) (Just (If e2 s2 Nothing))
-  where 
+  where
     (e0:e1:e2:_) = var_exprs
-    (_:s1:s2:_) = stmts 
+    (_:s1:s2:_) = stmts
 
 -- -----------------------------------------------------------------------------

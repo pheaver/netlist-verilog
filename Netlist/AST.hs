@@ -165,7 +165,7 @@ type LValue = Expr
 -- -----------------------------------------------------------------------------
 -- GENERATED START
 
- 
+
 instance Binary Module where
         put (Module x1 x2 x3 x4)
           = do put x1
@@ -179,7 +179,7 @@ instance Binary Module where
                x4 <- get
                return (Module x1 x2 x3 x4)
 
- 
+
 instance Binary Decl where
         put x
           = case x of
@@ -230,7 +230,7 @@ instance Binary Decl where
                            return (InitProcessDecl x1)
                    _ -> error "Corrupted binary data for Decl"
 
- 
+
 instance Binary Range where
         put (Range x1 x2)
           = do put x1
@@ -240,7 +240,7 @@ instance Binary Range where
                x2 <- get
                return (Range x1 x2)
 
- 
+
 instance Binary Event where
         put (Event x1 x2)
           = do put x1
@@ -250,7 +250,7 @@ instance Binary Event where
                x2 <- get
                return (Event x1 x2)
 
- 
+
 instance Binary Edge where
         put x
           = case x of
@@ -263,7 +263,7 @@ instance Binary Edge where
                    1 -> return NegEdge
                    _ -> error "Corrupted binary data for Edge"
 
- 
+
 instance Binary Expr where
         put x
           = case x of
@@ -348,7 +348,7 @@ instance Binary Expr where
                             return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expr"
 
- 
+
 instance Binary Stmt where
         put x
           = case x of

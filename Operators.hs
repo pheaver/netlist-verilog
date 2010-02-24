@@ -47,7 +47,7 @@ data BinaryOp
 -- -----------------------------------------------------------------------------
 -- GENERATED START
 
- 
+
 instance Binary UnaryOp where
         put x
           = case x of
@@ -76,7 +76,7 @@ instance Binary UnaryOp where
                    9 -> return UXnor
                    _ -> error "Corrupted binary data for UnaryOp"
 
- 
+
 instance Binary BinaryOp where
         put x
           = case x of

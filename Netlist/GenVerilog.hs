@@ -30,7 +30,7 @@ mk_module (Module name ins outs decls)
               | (x, mb_range) <- outs ] ++
 
             concatMap mk_decl decls
-             
+
 
 mk_decl :: Decl -> [V.Item]
 mk_decl (NetDecl x mb_range mb_expr)
