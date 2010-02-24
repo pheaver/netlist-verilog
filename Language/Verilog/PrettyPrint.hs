@@ -274,7 +274,7 @@ ppExpr' _ (ExprLit sz x)
 ppExpr' _ (ExprVar x)
   = ppIdent x
 ppExpr' _ (ExprString x)
-  = quotes (text x)
+  = doubleQuotes (text x)
 ppExpr' _ (ExprIndex x expr)
   = ppIdent x <> brackets (ppExpr expr)
 ppExpr' _ (ExprSlice x e1 e2)
