@@ -25,6 +25,15 @@ makeRange d sz
   | otherwise
   = error ("makeRange: invalid size: " ++ show sz)
 
+-- a couple useful functions
+exprConcat :: [Expr] -> Expr
+exprConcat [e] = e
+exprConcat es  = ExprConcat es
+
+statements :: [Stmt] -> Stmt
+statements [x] = x
+statements xs  = Seq xs
+
 -- -----------------------------------------------------------------------------
 
 -- generate a process declaration for a generic register based on the following:
