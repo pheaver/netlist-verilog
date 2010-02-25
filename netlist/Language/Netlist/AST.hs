@@ -29,7 +29,7 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# OPTIONS_DERIVE --append -d Binary #-}
 
-module Netlist.AST where
+module Language.Netlist.AST where
 
 import Data.Binary      ( Binary(..), putWord8, getWord8 )
 import Data.Generics	( Data, Typeable )

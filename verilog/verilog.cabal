@@ -1,0 +1,33 @@
+name:           verilog
+version:        0.1
+synopsis:       Verilog AST and pretty printer
+description:    Verilog AST and pretty printer -- parser to come later
+category:       Language
+license:        AllRightsReserved
+copyright:      Copyright (c) 2010 Signali Corp.
+author:         Philip Weaver
+maintainer:     pweaver@signalicorp.com
+package-url:    git://github.com/pheaver/netlist-verilog.git
+build-type:     Simple
+cabal-version:  >=1.2
+
+flag base4
+   Description: Compile using base-4 instead of base-3
+   Default: True
+
+flag split-base
+
+Library
+  exposed-modules:      Language.Verilog.AST,
+                        Language.Verilog.PrettyPrint,
+                        Language.Verilog
+
+  -- TODO figure out exactly which package versions we are compatible with
+  if flag(split-base)
+    build-depends:      binary, pretty
+    if flag(base4)
+       build-depends:   base == 4.*, syb
+    else
+       build-depends:   base == 3.*
+  else
+    build-depends:      base < 3

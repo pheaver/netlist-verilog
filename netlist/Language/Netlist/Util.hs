@@ -4,9 +4,9 @@
 -- Utility functions for Netlist, particularly for generating AST elements.
 -- -----------------------------------------------------------------------------
 
-module Netlist.Util where
+module Language.Netlist.Util where
 
-import Netlist.AST
+import Language.Netlist.AST
 
 -- -----------------------------------------------------------------------------
 

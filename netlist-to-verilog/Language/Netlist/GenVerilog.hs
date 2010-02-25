@@ -6,13 +6,13 @@
 -- TODO: endianness - currently we're hardcoded to little endian verilog
 -- -----------------------------------------------------------------------------
 
-module Netlist.GenVerilog ( mk_module
-                          , mk_decl
-                          , mk_stmt
-                          , mk_expr
-                          ) where
+module Language.Netlist.GenVerilog ( mk_module
+                                   , mk_decl
+                                   , mk_stmt
+                                   , mk_expr
+                                   ) where
 
-import Netlist.AST
+import Language.Netlist.AST
 import qualified Language.Verilog.AST as V
 
 -- -----------------------------------------------------------------------------

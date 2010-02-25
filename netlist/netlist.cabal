@@ -1,0 +1,36 @@
+name:           netlist
+version:        0.1
+synopsis:       Netlist AST
+description:    A very simplified and generic netlist designed to be compatible with
+                Hardware Description Languages (HDLs) like Verilog and VHDL.
+                Includes a simple inliner.
+category:       Language
+license:        AllRightsReserved
+copyright:      Copyright (c) 2010 Signali Corp.
+author:         Philip Weaver
+maintainer:     pweaver@signalicorp.com
+package-url:    git://github.com/pheaver/netlist-verilog.git
+build-type:     Simple
+cabal-version:  >=1.2
+
+flag base4
+   Description: Compile using base-4 instead of base-3
+   Default: True
+
+flag split-base
+
+Library
+  exposed-modules:      Language.Netlist.AST,
+                        Language.Netlist.Inline,
+                        Language.Netlist.Util
+  other-modules:        Language.Netlist.Examples
+
+  -- TODO figure out exactly which package versions we are compatible with
+  if flag(split-base)
+    build-depends:      binary, pretty, containers
+    if flag(base4)
+       build-depends:   base == 4.*, syb
+    else
+       build-depends:   base == 3.*
+  else
+    build-depends:      base < 3

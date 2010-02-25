@@ -6,7 +6,7 @@
 
 {-# LANGUAGE Rank2Types, PatternGuards #-}
 
-module Netlist.Inline ( inlineModule ) where
+module Language.Netlist.Inline ( inlineModule ) where
 
 import Data.Generics
 --import Data.List
@@ -14,7 +14,7 @@ import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Netlist.AST
+import Language.Netlist.AST
 
 -- -----------------------------------------------------------------------------
 

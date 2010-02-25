@@ -4,10 +4,10 @@
 
 {-# LANGUAGE ParallelListComp #-}
 
-module Netlist.Examples where
+module Language.Netlist.Examples where
 
-import Netlist.AST
-import Netlist.Util
+import Language.Netlist.AST
+import Language.Netlist.Util
 
 -- -----------------------------------------------------------------------------
 
