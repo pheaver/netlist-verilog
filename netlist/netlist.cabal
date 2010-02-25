@@ -20,6 +20,8 @@ flag base4
 flag split-base
 
 Library
+  ghc-options:          -Wall
+
   exposed-modules:      Language.Netlist.AST,
                         Language.Netlist.Inline,
                         Language.Netlist.Util

@@ -18,6 +18,8 @@ flag base4
 flag split-base
 
 Library
+  ghc-options:          -Wall
+
   exposed-modules:      Language.Netlist.GenVerilog
 
   build-depends:        netlist == 0.1, verilog == 0.1
