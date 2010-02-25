@@ -13,7 +13,6 @@ module Netlist.GenVerilog ( mk_module
                           ) where
 
 import Netlist.AST
---import Operators
 import qualified Language.Verilog.AST as V
 
 -- -----------------------------------------------------------------------------
@@ -84,7 +83,7 @@ mk_process_stmt ((Event e edge, stmt):xs)
   where
     cond = case edge of
              PosEdge -> (mk_expr e)
-             NegEdge -> V.ExprUnary LNeg (mk_expr e)
+             NegEdge -> V.ExprUnary V.UBang (mk_expr e)
 
 -- create a Verilog event expression from a list of triggers.
 -- the list must have at least one 'Event' field in it.
@@ -143,11 +142,10 @@ mk_expr (ExprSliceOff x e i)
     f = if i < 0 then V.ExprSliceMinus else V.ExprSlicePlus
 mk_expr (ExprConcat exprs)
   = V.ExprConcat (map mk_expr exprs)
--- TODO: in ExprUnary and ExprBinary, check that the op is valid in Verilog
 mk_expr (ExprUnary op expr)
-  = V.ExprUnary op (mk_expr expr)
+  = V.ExprUnary (unary_op op) (mk_expr expr)
 mk_expr (ExprBinary op expr1 expr2)
-  = V.ExprBinary op (mk_expr expr1) (mk_expr expr2)
+  = V.ExprBinary (binary_op op) (mk_expr expr1) (mk_expr expr2)
 mk_expr (ExprCond expr1 expr2 expr3)
   = V.ExprCond (mk_expr expr1) (mk_expr expr2) (mk_expr expr3)
 mk_expr (ExprFunCall x es)
@@ -162,5 +160,45 @@ expr_var x = V.ExprVar (mk_ident x)
 mkAssign :: Ident -> Expr -> V.Assignment
 mkAssign ident expr
   = V.Assignment (expr_var ident) (mk_expr expr)
+
+unary_op :: UnaryOp -> V.UnaryOp
+unary_op UPlus  = V.UPlus
+unary_op UMinus = V.UMinus
+unary_op LNeg   = V.UBang
+unary_op Neg    = V.UTilde
+unary_op UAnd   = V.UAnd
+unary_op UNand  = V.UNand
+unary_op UOr    = V.UOr
+unary_op UNor   = V.UNor
+unary_op UXor   = V.UXor
+unary_op UXnor  = V.UXnor
+
+binary_op :: BinaryOp -> V.BinaryOp
+binary_op Pow          = V.Pow
+binary_op Plus         = V.Plus
+binary_op Minus        = V.Minus
+binary_op Times        = V.Times
+binary_op Divide       = V.Divide
+binary_op Modulo       = V.Modulo
+binary_op Equals       = V.Equals
+binary_op NotEquals    = V.NotEquals
+binary_op CEquals      = V.CEquals
+binary_op CNotEquals   = V.CNotEquals
+binary_op LAnd         = V.LAnd
+binary_op LOr          = V.LOr
+binary_op LessThan     = V.LessThan
+binary_op LessEqual    = V.LessEqual
+binary_op GreaterThan  = V.GreaterThan
+binary_op GreaterEqual = V.GreaterEqual
+binary_op And          = V.And
+binary_op Nand         = V.Nand
+binary_op Or           = V.Or
+binary_op Nor          = V.Nor
+binary_op Xor          = V.Xor
+binary_op Xnor         = V.Xnor
+binary_op ShiftLeft    = V.ShiftLeft
+binary_op ShiftRight   = V.ShiftRight
+binary_op RotateLeft   = V.RotateLeft
+binary_op RotateRight  = V.RotateRight
 
 -- -----------------------------------------------------------------------------

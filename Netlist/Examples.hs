@@ -8,7 +8,6 @@ module Netlist.Examples where
 
 import Netlist.AST
 import Netlist.Util
---import Operators
 
 -- -----------------------------------------------------------------------------
 

@@ -323,7 +323,7 @@ lookupOp op table
 -- these tables could also be used for parsing operators.
 unary_op_table :: [(UnaryOp, String)]
 unary_op_table
-  = [ (UPlus, "+"), (UMinus, "-"), (LNeg, "!"), (Neg, "~")
+  = [ (UPlus, "+"), (UMinus, "-"), (UBang, "!"), (UTilde, "~")
     , (UAnd, "&"), (UNand, "~&"), (UOr, "|"), (UNor, "~|")
     , (UXor, "^"), (UXnor, "~^"), (UXnor, "^~")
     ]
