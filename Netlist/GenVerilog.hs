@@ -119,7 +119,10 @@ mk_stmt (Case e case_items mb_default)
 mk_stmt (Seq stmts)
   = V.SeqBlock Nothing [] (map mk_stmt stmts)
 mk_stmt (FunCallStmt x es)
-  = V.TaskStmt (mk_ident x) (Just (map mk_expr es))
+  | head x == '$'
+  = V.TaskStmt (mk_ident (tail x)) (Just (map mk_expr es))
+  | otherwise
+  = error ("FunCallStmt " ++ x)
 
 mk_expr :: Expr -> V.Expression
 mk_expr (ExprNum x)
