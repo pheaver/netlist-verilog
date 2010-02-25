@@ -220,6 +220,8 @@ ppStatement (ParBlock mb_name decls stmts)
   where x = case mb_name of
               Just name -> colon <+> ppIdent name
               Nothing   -> empty
+ppStatement (TaskStmt x mb_es)
+  = char '$' <> ppIdent x <> maybe empty (parens . commasep . map ppExpr) mb_es <> semi
 ppStatement (AssignStmt assignment)
   = text "assign" <+> ppAssignment assignment <> semi
 ppStatement (DeAssignStmt x)
