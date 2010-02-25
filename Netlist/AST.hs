@@ -156,6 +156,8 @@ data Stmt
   | Case Expr [([Expr], Stmt)] (Maybe Stmt)
                                -- case statement, with optional default case
   | Seq [Stmt]                 -- multiple statements (between 'begin' and 'end')
+  | FunCallStmt Ident [Expr]   -- a function call that can appear as a statement,
+                               -- useful for calling Verilog tasks (e.g. $readmem).
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- not all expressions are allowed on the LHS of an assignment, but we're lazy
@@ -365,6 +367,9 @@ instance Binary Stmt where
                                     put x3
                 Seq x1 -> do putWord8 3
                              put x1
+                FunCallStmt x1 x2 -> do putWord8 4
+                                        put x1
+                                        put x2
         get
           = do i <- getWord8
                case i of
@@ -381,5 +386,8 @@ instance Binary Stmt where
                            return (Case x1 x2 x3)
                    3 -> do x1 <- get
                            return (Seq x1)
+                   4 -> do x1 <- get
+                           x2 <- get
+                           return (FunCallStmt x1 x2)
                    _ -> error "Corrupted binary data for Stmt"
 -- GENERATED STOP

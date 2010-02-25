@@ -197,6 +197,7 @@ data Statement
   -- TODO: -> <name_of_event>
   | SeqBlock (Maybe Ident) [BlockDecl] [Statement]
   | ParBlock (Maybe Ident) [BlockDecl] [Statement]
+  | TaskStmt Ident (Maybe [Expression])
   -- TODO: <task_enable>
   -- TODO: <system_task_enable>
   -- TODO: DisableStmt Ident
@@ -699,13 +700,16 @@ instance Binary Statement where
                                         put x1
                                         put x2
                                         put x3
-                AssignStmt x1 -> do putWord8 12
+                TaskStmt x1 x2 -> do putWord8 12
+                                     put x1
+                                     put x2
+                AssignStmt x1 -> do putWord8 13
                                     put x1
-                DeAssignStmt x1 -> do putWord8 13
+                DeAssignStmt x1 -> do putWord8 14
                                       put x1
-                ForceStmt x1 -> do putWord8 14
+                ForceStmt x1 -> do putWord8 15
                                    put x1
-                ReleaseStmt x1 -> do putWord8 15
+                ReleaseStmt x1 -> do putWord8 16
                                      put x1
         get
           = do i <- getWord8
@@ -753,12 +757,15 @@ instance Binary Statement where
                             x3 <- get
                             return (ParBlock x1 x2 x3)
                    12 -> do x1 <- get
-                            return (AssignStmt x1)
+                            x2 <- get
+                            return (TaskStmt x1 x2)
                    13 -> do x1 <- get
-                            return (DeAssignStmt x1)
+                            return (AssignStmt x1)
                    14 -> do x1 <- get
-                            return (ForceStmt x1)
+                            return (DeAssignStmt x1)
                    15 -> do x1 <- get
+                            return (ForceStmt x1)
+                   16 -> do x1 <- get
                             return (ReleaseStmt x1)
                    _ -> error "Corrupted binary data for Statement"
 
