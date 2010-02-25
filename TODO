@@ -1,8 +1,4 @@
 #-*-org-*-
 
-* TODO Put modules in appropriate namespaces
-- Operators should go in something like Language.HDL.Operators?
-- Netlist should go in something like Language.Netlist?
 * TODO Haddock-ify the modules
-* TODO Create .cabal file
 * TODO Create a README file
