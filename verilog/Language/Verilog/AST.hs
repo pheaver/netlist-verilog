@@ -1,32 +1,74 @@
--- -----------------------------------------------------------------------------
--- Copyright (c) 2010 Signali Corp.
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Verilog.AST
+-- Copyright    :  (c) Signali Corp. 2010
+-- License      :  All rights reserved
 --
--- An abstract syntax tree (AST) for Verilog, taken straight form
--- http://www.verilog.com/VerilogBNF.html.  This AST is very close to the
--- concrete syntax, and is not meant to operated on, other than generating,
--- pretty printing, and parsing.  To do anything more advanced, it should be
--- converted into another form.
--- -----------------------------------------------------------------------------
+-- Maintainer   : pweaver@signalicorp.com
+-- Stability    : experimental
+-- Portability  : non-portable (DeriveDataTypeable)
+--
+-- An abstract syntax tree (AST) for Verilog, derived form
+-- <http://www.verilog.com/VerilogBNF.html>, and extended to support some
+-- Verilog-2001 constructs.  The URL above is referred to as the \"spec\"
+-- throughout the documentaiton.
+--
+-- See also the Wikipedia article on Verilog:
+-- <http://en.wikipedia.org/wiki/Verilog>.
+--
+-- This AST is very close to the concrete syntax, and is only meant for
+-- generating, pretty printing, and parsing.  To do anything more advanced, it
+-- should be converted into another form.
+--
+-- The AST is incomplete in many places, and deviates from the spec in a few
+-- places, too.
+--------------------------------------------------------------------------------
 
 {-# LANGUAGE DeriveDataTypeable, TypeOperators #-}
 {-# OPTIONS_DERIVE --append -d Binary #-}
 
-module Language.Verilog.AST where
+module Language.Verilog.AST
+  (
+  -- * The top-level types
+  Verilog(..), Module(..), Description(..),
+
+  -- * Items and Declarations
+  Item(..), ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
+  NetDecl(..), RegDecl(..), TimeDecl(..), IntegerDecl(..), RealDecl(..), EventDecl(..),
+
+  -- * Primitive Instances
+
+  -- * Module Instantiations
+  ModuleInst(..), Parameter(..), Instance(..), Connections(..), NamedConnection(..),
+
+  -- * Behavioral Statements
+  Statement(..), Assignment(..), CaseItem(..), BlockDecl(..),
+
+  -- * Expressions
+  Expression(..), ConstExpr, LValue, UnaryOp(..), BinaryOp(..),
+
+  -- * Miscellaneous
+  Ident(..), ParamAssign(..), ExpandRange(..), Range(..), RegVar(..),
+  DelayOrEventControl(..), DelayControl, EventControl, Delay,
+  EventExpr(..), ScalarEventExpr,
+  ChargeStrength, charge_strengths, DriveStrength(..),
+  Strength0, strength0s, Strength1, strength1s, NetType, net_types
+  ) where
 
 import Data.Binary      ( Binary(..), putWord8, getWord8 )
 import Data.Generics    ( Data, Typeable )
 
 -- -----------------------------------------------------------------------------
-
-newtype Ident = Ident String
-  deriving (Eq, Ord, Show, Data, Typeable)
-
--- -----------------------------------------------------------------------------
 -- 1. Source Text
 
 newtype Verilog = Verilog [Description]
+  deriving (Eq, Ord, Show, Data, Typeable)
 
-type Description = Module
+-- | This should be module or user-defined primitive, but for now we are only
+-- supporting module.
+data Description
+  = ModuleDescription Module
+  deriving (Eq, Ord, Show, Data, Typeable)
 
 {-
 data Description
@@ -35,13 +77,17 @@ data Description
   deriving (Eq, Ord, Show, Data, Typeable)
 -}
 
+-- | A top-level module has the module name, the list of ports (both input and
+-- output), and the body of the module (a list of declarations).  In the spec,
+-- the ports have a more complicated type than simply @Ident@.
 data Module
-  = Module Ident   -- name of module
-           [Ident] -- list of ports
-                   -- this is a more complicated "Port" in the spec
-           [Item]  -- module body
+  = Module Ident     -- The name of module
+           [Ident]   -- The list of ports, including both inputs and outputs
+                     -- In the spec, this is a more complicated type.
+           [Item]    -- The module's body, a list of declarations.
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | A declaration.
 data Item
   = ParamDeclItem ParamDecl
   | InputDeclItem InputDecl
@@ -113,6 +159,7 @@ newtype EventDecl
 -- -----------------------------------------------------------------------------
 -- 3. Primitive Instances
 
+{-
 data GateDecl
   = GateDecl GateType (Maybe DriveStrength) (Maybe Delay) [GateInst]
   deriving (Eq, Ord, Show, Data, Typeable)
@@ -142,34 +189,51 @@ data Terminal
   = ExprTerminal Expression
   | IdentTerminal Ident
   deriving (Eq, Ord, Show, Data, Typeable)
+-}
 
 -- -----------------------------------------------------------------------------
 -- 4. Module Instantiations
 
+-- | A module instantiation.  In Verilog, a module instantiation can list
+-- multiple instances of the same module.  So, the arguments to @ModuleInst@ are
+-- the name of the module (not the name of the instantiation), the list of
+-- parameter assignments, and the list of module instances.  Each @Instance@ has
+-- a name and port connections.
 data ModuleInst
-  = ModuleInst Ident         -- <name_of_module>
-               [Parameter]   -- <parameter_value_assignment>
-               [Instance]    -- <module_instance>
+  = ModuleInst Ident         -- Name of the module
+               [Parameter]   -- Parameter value assignments
+               [Instance]    -- Module instances
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- the spec says this is just one or more expressions, but that doesn't seem
 -- right to me.  It should be a mapping of parameter names to expression values.
 -- I suspect that the spec is outdated (applies to an older Verilog standard).
+-- | A parameter value assignment is used in a module instance to associate a
+-- parameter with a value.
 data Parameter
   = Parameter Ident Expression
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | A module instance.  The name of the module and the parameter assignments
+-- are defined in @ModuleInst@, which has any number of @Instance@s.  The
+-- instance itself has a name and a list of port connections.
 data Instance
-  = Instance Ident          -- <name_of_instance>
-             (Maybe Range)  -- <range>?  -- not sure what this is for...
-             Connections    -- <list_of_module_connections>
+  = Instance Ident          -- Name of the instance
+             (Maybe Range)  -- I'm actually not sure what this is for!
+             Connections    -- The (input and output) port connections.
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | Connections in a module instance can be all nnammed or all unnamed.  When
+-- they are unnamed, this means they are positional, like in most programming
+-- languages.  However, when the formal ports are named, then you can specify
+-- the connections in any order.
 data Connections
   = Connections [Expression]
   | NamedConnections [NamedConnection]
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | A named connection, like a parameter value assignment, associates a port
+-- with a value in a module instance.
 data NamedConnection
   = NamedConnection Ident Expression
   deriving (Eq, Ord, Show, Data, Typeable)
@@ -177,36 +241,56 @@ data NamedConnection
 -- ----------------------------------------------------------------------------
 -- 5. Behavioral Statements
 
+-- | Behavioral statements.
 data Statement
+  -- | blocking assignment, e.g. @x \= y@
   = BlockingAssignment LValue (Maybe DelayOrEventControl) Expression
+  -- | non-blocking assignment, e.g. @x \<= y@
   | NonBlockingAssignment LValue (Maybe DelayOrEventControl) Expression
+  -- | @if@ statement.  Both branches are optional.
   | IfStmt Expression (Maybe Statement) (Maybe Statement)
+  -- | @case@ statement.
   | CaseStmt Expression [CaseItem]
   -- TODO: casex and casez
   -- TODO: CaseStmt Expression [CaseItem]
+  -- | @forever@ statement, e.g. @forever $display(\"Hello!\")@;
   | ForeverStmt Statement
+  -- | @repeat@ statement, e.g. @repeat (10) \@(posedge clk);@
   | RepeatStmt Expression Statement
+  -- | @while@ statement, e.g. @while (x < 10) x = x + 1;@
   | WhileStmt Expression Statement
+  -- | @for@ statement, e.g. @for (i = 0; i < 10; i = i + 1) $display(\"%d\", i);@
   | ForStmt Assignment Expression Assignment Statement
+  -- | delay or event control statement, e.g. @\@(posedge clk) x <= 10;@, or @#10 x <= 10;@
   | DelayOrEventControlStmt DelayOrEventControl (Maybe Statement)
+  -- | @wait@ statement, e.g. @wait (x) y <= 0;@
   | WaitStmt Expression (Maybe Statement)
+  -- | a sequence of statements between @begin@ and @end@ keywords.
   -- TODO: -> <name_of_event>
   | SeqBlock (Maybe Ident) [BlockDecl] [Statement]
+  -- | a set of parallel statements, enclosed between @fork@ and @join@ keywords.
   | ParBlock (Maybe Ident) [BlockDecl] [Statement]
+  -- | call a task, with optional arguments like in a function call.
   | TaskStmt Ident (Maybe [Expression])
   -- TODO: <task_enable>
   -- TODO: <system_task_enable>
   -- TODO: DisableStmt Ident
+  -- | @assign@ statement (like continuous assignment).
   | AssignStmt Assignment
+  -- | @deassign@ statement.
   | DeAssignStmt LValue
+  -- | @force@ statement.
   | ForceStmt Assignment
+  -- | @release@ statement.
   | ReleaseStmt LValue
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | An assignment.
 data Assignment
   = Assignment LValue Expression
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | One case item in a @case@ statement.
 data CaseItem
   = CaseItem [Expression] (Maybe Statement)
   | CaseDefault (Maybe Statement)
@@ -224,26 +308,33 @@ data BlockDecl
 -- -----------------------------------------------------------------------------
 -- 7. Expressions
 
+-- | Expressions.  We do not yet support literals with @x@ or @z@ in them.
 data Expression
   -- TODO: support X, x, z, and Z in numbers
   -- TODO: support fractional numbers (e.g. 3.14)
   -- TODO: support exponent numbers (e.g. 3e10)
+  -- | An unsized number
   = ExprNum Integer
+  -- | A sized number
   | ExprLit Int Integer
+  -- | A variable reference
   | ExprVar Ident
+  -- | A literal string, in quotes.  Used for parameter values.
   | ExprString String
+  -- | Index operator, e.g. @x[y]@.
   | ExprIndex Ident Expression
+  -- | A slice operation of a range of indices, e.g. x[10:15].
   | ExprSlice Ident ConstExpr ConstExpr
   -- these next two aren't in the spec, but they're certainly in the Verilog standard
-  | ExprSlicePlus Ident Expression ConstExpr
-  | ExprSliceMinus Ident Expression ConstExpr
-  | ExprConcat [Expression]
-  | ExprMultiConcat Expression [Expression] -- a.k.a. "replication operator"
+  | ExprSlicePlus Ident Expression ConstExpr   -- ^ e.g. @x[y +: 10]@
+  | ExprSliceMinus Ident Expression ConstExpr  -- ^ e.g. @x[y -: 10]@
+  | ExprConcat [Expression]                    -- ^ Concatenation, e.g. @{a, b, c}@
+  | ExprMultiConcat Expression [Expression]    -- ^ Replication, e.g. @{10,{a, b, c}}@
   -- TODO: <mintypmax_expression>
-  | ExprUnary UnaryOp Expression
-  | ExprBinary BinaryOp Expression Expression
-  | ExprCond Expression Expression Expression
-  | ExprFunCall Ident [Expression]
+  | ExprUnary UnaryOp Expression               -- ^ Application of a unary operator
+  | ExprBinary BinaryOp Expression Expression  -- ^ Application of a binary operator
+  | ExprCond Expression Expression Expression  -- ^ Conditional expression, e.g. @x ? y : z@
+  | ExprFunCall Ident [Expression]             -- ^ Function call, e.g. @f(a, b, c)@
   deriving (Eq, Ord, Show, Data, Typeable)
 
 type ConstExpr = Expression
@@ -256,25 +347,61 @@ type ConstExpr = Expression
 -- However, we don't make that restriction in our AST.
 type LValue = Expression
 
+-- | Unary operators.  @Uand@, @UNand@, @UOr@, @UNor@, @UXor@, and @UXnor@ are
+-- known as \"reduction operators\".  They work just like Haskell\'s @fold@
+-- function.
 data UnaryOp
   -- UTilde (~) is bitwise negation, UBang (!) is logical negation
   -- UAnd/UNand/UOr/UNor/UXor/UXnor are sometimes called "reduction operators"
-  = UPlus | UMinus | UBang | UTilde | UAnd | UNand | UOr | UNor | UXor | UXnor
+  = UPlus   -- ^ Unary plus operator: @+@
+  | UMinus  -- ^ Unary 2\'s complement negation: @-@
+  | UBang   -- ^ Logical negation, a.k.a NOT: @!@
+  | UTilde  -- ^ Bitwise negation, a.k.a. 1\'s complement: @~@
+  | UAnd    -- ^ @AND@ reduction operator: @&@
+  | UNand   -- ^ @NAND@ reduction operator: @~&@
+  | UOr     -- ^ @OR@ eduction operator: @|@
+  | UNor    -- ^ @NOR@ reduction operator: @~|@
+  | UXor    -- ^ @XOR@ reduction operator: @^@
+  | UXnor   -- ^ @XNOR@ reduction operator: @^~@ or @~^@
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | Binary operators.
 data BinaryOp
-  = Pow | Plus | Minus | Times | Divide | Modulo      -- arithmetic
-  | Equals | NotEquals                                -- logical equality
-  | CEquals | CNotEquals                              -- case equality
-  | LAnd | LOr                                        -- logical and/or
-  | LessThan | LessEqual | GreaterThan | GreaterEqual -- relational
-  | And | Nand | Or | Nor | Xor | Xnor                -- bitwise
-  | ShiftLeft | ShiftRight | RotateLeft | RotateRight -- shift/rotate
+  = Pow          -- ^ Arithmetic exponentiation: @**@.  Introduced in Verilog-2001.
+  | Plus         -- ^ Arithmetic addition: @+@.
+  | Minus        -- ^ Arithmetic subtraction: @-@
+  | Times        -- ^ Arithmetic multiplication: @*@
+  | Divide       -- ^ Arithmetic division: @/@
+  | Modulo       -- ^ Arithmetic modulo: @%@
+  | Equals       -- ^ Logical equality: @==@
+  | NotEquals    -- ^ Logical inequality: @!=@
+  | CEquals      -- ^ Case equality: @===@.  4-state logic, where @x@ and @z@ are
+                 -- taken literally.
+  | CNotEquals   -- ^ Case inequality: @!==@. 4-state logic, where @x@ and @z@
+                 -- are taken literally.
+  | LAnd         -- ^ Logical @AND@ operation: @&&@
+  | LOr          -- ^ Logical @OR@ operation: @||@
+  | LessThan     -- ^ Less than: @<@
+  | LessEqual    -- ^ Less than or equal to: @<=@
+  | GreaterThan  -- ^ Greater than: @>@
+  | GreaterEqual -- ^ Greater than or equal to: @>=@
+  | And          -- ^ Bitwise @AND@ operation: @&@
+  | Nand         -- ^ Bitwise @NAND@ operation: @~&@
+  | Or           -- ^ Bitwise @OR@ operation: @|@
+  | Nor          -- ^ Bitwise @NOR@ operation: @~|@
+  | Xor          -- ^ Bitwise @XOR@ operation: @^@
+  | Xnor         -- ^ Bitwise @XNOR@ operation: @^~@ or @~^@
+  | ShiftLeft    -- ^ Logical left shift: @<<@
+  | ShiftRight   -- ^ Logical right shift: @>>@
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- -----------------------------------------------------------------------------
 -- Miscellaneous
 
+newtype Ident = Ident String
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+-- | Assign a parameter in its declaration.
 data ParamAssign
   = ParamAssign Ident ConstExpr
   deriving (Eq, Ord, Show, Data, Typeable)
@@ -354,18 +481,18 @@ net_types
 -- GENERATED START
 
 
-instance Binary Ident where
-        put (Ident x1) = put x1
-        get
-          = do x1 <- get
-               return (Ident x1)
-
-
 instance Binary Verilog where
         put (Verilog x1) = put x1
         get
           = do x1 <- get
                return (Verilog x1)
+
+
+instance Binary Description where
+        put (ModuleDescription x1) = put x1
+        get
+          = do x1 <- get
+               return (ModuleDescription x1)
 
 
 instance Binary Module where
@@ -553,57 +680,6 @@ instance Binary EventDecl where
         get
           = do x1 <- get
                return (EventDecl x1)
-
-
-instance Binary GateDecl where
-        put (GateDecl x1 x2 x3 x4)
-          = do put x1
-               put x2
-               put x3
-               put x4
-        get
-          = do x1 <- get
-               x2 <- get
-               x3 <- get
-               x4 <- get
-               return (GateDecl x1 x2 x3 x4)
-
-
-instance Binary GateInst where
-        put (GateInst x1 x2)
-          = do put x1
-               put x2
-        get
-          = do x1 <- get
-               x2 <- get
-               return (GateInst x1 x2)
-
-
-instance Binary GateInstName where
-        put (GateInstName x1 x2)
-          = do put x1
-               put x2
-        get
-          = do x1 <- get
-               x2 <- get
-               return (GateInstName x1 x2)
-
-
-instance Binary Terminal where
-        put x
-          = case x of
-                ExprTerminal x1 -> do putWord8 0
-                                      put x1
-                IdentTerminal x1 -> do putWord8 1
-                                       put x1
-        get
-          = do i <- getWord8
-               case i of
-                   0 -> do x1 <- get
-                           return (ExprTerminal x1)
-                   1 -> do x1 <- get
-                           return (IdentTerminal x1)
-                   _ -> error "Corrupted binary data for Terminal"
 
 
 instance Binary ModuleInst where
@@ -995,8 +1071,6 @@ instance Binary BinaryOp where
                 Xnor -> putWord8 21
                 ShiftLeft -> putWord8 22
                 ShiftRight -> putWord8 23
-                RotateLeft -> putWord8 24
-                RotateRight -> putWord8 25
         get
           = do i <- getWord8
                case i of
@@ -1024,9 +1098,14 @@ instance Binary BinaryOp where
                    21 -> return Xnor
                    22 -> return ShiftLeft
                    23 -> return ShiftRight
-                   24 -> return RotateLeft
-                   25 -> return RotateRight
                    _ -> error "Corrupted binary data for BinaryOp"
+
+
+instance Binary Ident where
+        put (Ident x1) = put x1
+        get
+          = do x1 <- get
+               return (Ident x1)
 
 
 instance Binary ParamAssign where

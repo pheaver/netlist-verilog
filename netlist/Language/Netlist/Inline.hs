@@ -1,8 +1,15 @@
--- -----------------------------------------------------------------------------
--- Copyright (c) 2010 Signali Corp.
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Netlist.Inline
+-- Copyright    :  (c) Signali Corp. 2010
+-- License      :  All rights reserved
 --
--- An inliner for Netlist.AST.
--- -----------------------------------------------------------------------------
+-- Maintainer   : pweaver@signalicorp.com
+-- Stability    : experimental
+-- Portability  : non-portable
+--
+-- A simple inliner for a Netlist AST ('Language.Netlist.AST').
+--------------------------------------------------------------------------------
 
 {-# LANGUAGE Rank2Types, PatternGuards #-}
 
@@ -18,6 +25,9 @@ import Language.Netlist.AST
 
 -- -----------------------------------------------------------------------------
 
+-- | Produce a new module in which some variables have been inlined.  An
+-- expression is inlined (and it\'s declaration removed) if it only used in one
+-- place in the entire module.
 inlineModule :: Module -> Module
 inlineModule (Module name inputs outputs decls)
   = Module name inputs outputs decls''
@@ -28,8 +38,9 @@ inlineModule (Module name inputs outputs decls)
     decls'  = replaceExprs bs' decls
     decls'' = removeDecls (Map.keys bs') decls'
 
--- given a list of identifier-to-expression bindings, replace the identifiers everywhere in an AST.
--- Note: "everywhere" applies bottom-up.  We want everywhere', which is top-down.
+-- given a list of identifier-to-expression bindings, replace the identifiers
+-- everywhere in an AST.  Note: "everywhere" applies bottom-up.  We want
+-- everywhere', which is top-down.
 replaceExprs :: forall a. (Data a) => Map Ident Expr -> a -> a
 replaceExprs bs a = everywhere' (mkT f) a
   where

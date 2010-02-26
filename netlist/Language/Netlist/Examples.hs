@@ -1,6 +1,15 @@
--- -----------------------------------------------------------------------------
--- Copyright (c) 2010 Signali Corp.
--- -----------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Netlist.Examples
+-- Copyright    :  (c) Signali Corp. 2010
+-- License      :  All rights reserved
+--
+-- Maintainer   : pweaver@signalicorp.com
+-- Stability    : experimental
+-- Portability  : non-portable
+--
+-- Examples of Netlist AST.
+--------------------------------------------------------------------------------
 
 {-# LANGUAGE ParallelListComp #-}
 

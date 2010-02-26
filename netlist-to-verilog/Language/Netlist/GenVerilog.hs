@@ -1,10 +1,24 @@
--- -----------------------------------------------------------------------------
--- Copyright (c) 2010 Signali Corp.
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Netlist.GenVerilog
+-- Copyright    :  (c) Signali Corp. 2010
+-- License      :  All rights reserved
 --
--- Convert a Netlist AST to Verilog.
+-- Maintainer   : pweaver@signalicorp.com
+-- Stability    : experimental
+-- Portability  : non-portable (DeriveDataTypeable)
 --
+-- Translate a Netlist AST into a Verilog AST.
+--
+-- The @netlist@ package defines the Netlist AST and the @verilog@ package
+-- defines the Verilog AST.
+--
+-- Not every Netlist AST is compatible with Verilog.  For example, the Netlist
+-- AST permits left- and right-rotate operators, which are not supported in
+-- Verilog.
+--------------------------------------------------------------------------------
+
 -- TODO: endianness - currently we're hardcoded to little endian verilog
--- -----------------------------------------------------------------------------
 
 module Language.Netlist.GenVerilog ( mk_module
                                    , mk_decl
@@ -201,7 +215,7 @@ binary_op Xor          = V.Xor
 binary_op Xnor         = V.Xnor
 binary_op ShiftLeft    = V.ShiftLeft
 binary_op ShiftRight   = V.ShiftRight
-binary_op RotateLeft   = V.RotateLeft
-binary_op RotateRight  = V.RotateRight
+binary_op RotateLeft   = error "GenVerilog: no left-rotate operator in Verilog"
+binary_op RotateRight  = error "GenVerilog: no right-rotate operator in Verilog"
 
 -- -----------------------------------------------------------------------------

@@ -1,8 +1,15 @@
--- -----------------------------------------------------------------------------
--- Copyright (c) 2010 Signali Corp.
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Verilog.PrettyPrint
+-- Copyright    :  (c) Signali Corp. 2010
+-- License      :  All rights reserved
 --
--- A pretty-printer for the Verilog AST.
--- -----------------------------------------------------------------------------
+-- Maintainer   : pweaver@signalicorp.com
+-- Stability    : experimental
+-- Portability  : non-portable (DeriveDataTypeable)
+--
+-- A pretty printer for the Verilog AST.
+--------------------------------------------------------------------------------
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -33,9 +40,9 @@ tick = char '\''
 -- 1. Source Text
 
 ppDescription :: Description -> Doc
-ppDescription = ppModule
+ppDescription (ModuleDescription m) = ppModule m
 
-ppModule :: Description -> Doc
+ppModule :: Module -> Doc
 ppModule (Module name ports body)
   = text "module" <+> ppIdent name <+> parens (ppIdents ports) <> semi $$
     nest 2 (vcat (map ppItem body)) $$

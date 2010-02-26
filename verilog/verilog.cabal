@@ -9,7 +9,7 @@ author:         Philip Weaver
 maintainer:     pweaver@signalicorp.com
 package-url:    git://github.com/pheaver/netlist-verilog.git
 build-type:     Simple
-cabal-version:  >=1.2
+cabal-version:  >=1.6
 
 flag base4
    Description: Compile using base-4 instead of base-3

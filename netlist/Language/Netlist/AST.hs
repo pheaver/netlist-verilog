@@ -1,29 +1,35 @@
--- -----------------------------------------------------------------------------
--- Copyright (c) 2010 Signali Corp.
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Netlist.AST
+-- Copyright    :  (c) Signali Corp. 2010
+-- License      :  All rights reserved
 --
--- An abstract syntax tree (AST) for a generic netlist, somewhere between SPIR
--- and HDLs like Verilog and VHDL.
+-- Maintainer   : pweaver@signalicorp.com
+-- Stability    : experimental
+-- Portability  : non-portable (DeriveDataTypeable)
 --
--- there are no definitive semantics assigned to this AST.
+-- An abstract syntax tree (AST) for a generic netlist, kind of like a
+-- high-level subset of Verilog and VHDL that is compatible with both languages.
 --
--- for example, the user may choose to treat the bindings as recursive, so that
+-- There are no definitive semantics assigned to this AST.
+--
+-- For example, the user may choose to treat the bindings as recursive, so that
 -- expressions can reference variables before their declaration, like in
 -- Haskell, which is not supported in Verilog and VHDL.  in this case, the user
 -- must fix the bindings when converting to an HDL.
 --
--- also, the user may treat module instantiations and processes as having an
+-- Also, the user may treat module instantiations and processes as having an
 -- implict clock/reset, so that they are not explicitly named in those
--- constructs in this AST.  then, any "Always" triggers and module
--- instantiations can be interpreted as having an implicit clock/reset, which
--- are inserted whe generating HDL.
+-- constructs in this AST.  Then, the clock and reset can be inserted when
+-- generating HDL.
 --
--- when you instantiate a module but information about that module is missing
+-- When you instantiate a module but information about that module is missing
 -- (e.g. the clock/reset are implicit and you need to know what they are called
 -- in that module), you can use ExternDecl (TODO) to declare a module's
 -- interface so that you know how to instantiate it, or retrieve the interface
 -- from a user-maintained database or by parsing and extracting from an HDL
 -- file.
--- -----------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -Wall #-}
@@ -36,42 +42,42 @@ import Data.Generics	( Data, Typeable )
 
 -- -----------------------------------------------------------------------------
 
--- corresponds to a Verilog "module" or VHDL "entity"
-data Module
-  = Module { module_name    :: Ident
-           , module_inputs  :: [(Ident, Maybe Range)]
-           , module_outputs :: [(Ident, Maybe Range)]
-           , module_decls   :: [Decl]
-           -- TODO: support static parameters (VHDL "generic", Verilog "parameter")
-           }
+-- | A Module corresponds to a \"module\" in Verilog or an \"entity\" in VHDL.
+data Module = Module
+  { module_name    :: Ident
+  , module_inputs  :: [(Ident, Maybe Range)]
+  , module_outputs :: [(Ident, Maybe Range)]
+  , module_decls   :: [Decl]
+  -- TODO: support static parameters (VHDL "generic", Verilog "parameter")
+  }
   deriving (Eq, Ord, Show, Data, Typeable)
 
--- identifier name.  we could make this something like SPIR.Var, and/or
--- parameterize the AST over it.
+-- | An identifier name.
 type Ident = String
 
--- size of a wire/mem
+-- | The size of a wire.
 type Size = Int
 
--- a declaration -- analogous to `module_item' in Verilog formal syntax.
+-- | A declaration, analogous to an \"item\" in the Verilog formal syntax.
 data Decl
-  -- A net (aka 'wire') has a continuously assigned value.  The net can be
-  -- declared and assigned at the same time (NetDecl with Just Expr), or
-  -- separately (NetDecl with Nothing, and a separate NetAssign).
+  -- | A net (@wire@ in Verilog) has a continuously assigned value.  The net can
+  -- be declared and assigned at the same time (@Just Expr@), or separately
+  -- (@Nothing@) in a @NetAssign@.
   = NetDecl Ident (Maybe Range) (Maybe Expr)
   | NetAssign Ident Expr
 
-  -- A mem (aka 'reg') is stateful.  it can be assigned by a non-blocking
-  -- assignment (or blocking, but we don't support those yet) within a process.
-  -- TODO: support optional initial value
-
+  -- | A mem (@reg@ in Verilog) is stateful.  It can be assigned by a
+  -- non-blocking assignment (or blocking, but we don't support those yet)
+  -- within a process.  TODO: support optional initial value
+  --
   -- The first range is the most significant dimension.
-  -- So, MemDecl x (0, 31) (7, 0) corresponds to the following in Verilog:
+  -- So, @MemDecl x (0, 31) (7, 0)@ corresponds to the following in Verilog:
   --    reg [7:0] x [0:31]
-
   | MemDecl Ident (Maybe Range) (Maybe Range)
 
-  -- a module/entity instantiation
+  -- | A module/entity instantiation.  The arguments are the name of the module,
+  -- the name of the instance, the parameter assignments, the input port
+  -- connections, and the output port connections.
   | InstDecl Ident            -- name of the module
              Ident            -- name of the instance
              [(Ident, Expr)]  -- parameter assignments
@@ -81,21 +87,23 @@ data Decl
   -- declare an external module entity
   -- TODO: ExternDecl ExternLang
 
-  -- Below is a general process construct, compatible with both VHDL and Verilog
+  -- | A general process construct, compatible with both VHDL and Verilog
   -- processes.  It supports positive and negative edge triggers and a body (a
-  -- statement) for each trigger.
-
-  -- Here are loose semantics of a process [(trigger0, stmt0), (trigger1, stmt1)...]:
+  -- statement) for each trigger.  Here are loose semantics of a process
+  -- @[(trigger0, stmt0), (trigger1, stmt1)...]@:
   --
+  -- @
   -- if trigger0
   --    statement0
   -- else if
   --    trigger1
   -- ...
+  -- @
 
   | ProcessDecl [(Event, Stmt)]
 
-  -- execute once at the beginning of simulation
+  -- | A statement that executes once at the beginning of simulation.
+  -- Equivalent to Verilog \"initial\" statement.
   | InitProcessDecl Stmt
 
   deriving (Eq, Ord, Show, Data, Typeable)
@@ -104,6 +112,8 @@ data Range
   = Range ConstExpr ConstExpr
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | A constant expression is simply an expression that must be a constant
+-- (i.e. the only free variables are static parameters).
 type ConstExpr = Expr
 
 data Event
@@ -116,65 +126,81 @@ data Edge
   -- TODO: AnyEdge?
   deriving (Eq, Ord, Show, Data, Typeable)
 
--- Expr is combination of VHDL and Verilog expressions.
-
+-- | Expr is a combination of VHDL and Verilog expressions.
+--
 -- In VHDL, concatenation is a binary operator, but in Verilog it takes any
 -- number of arguments.  In this AST, we define it like the Verilog operator.
 -- If we translate to VHDL, we have to convert it to the VHDL binary operator.
-
+--
 -- There are some HDL operators that we don't represent here.  For example, in
 -- Verilog there is a multiple concatenation (a.k.a. replication) operator,
 -- which we don't bother to support.
 
 data Expr
-  -- terminal nodes
-  = ExprNum Integer               -- un unsized number
-  | ExprLit Size Integer          -- a sized bitvector
-  | ExprBit Int                   -- in vhdl, bits are different than 1-bit bitvectors
-  | ExprVar Ident
-  | ExprString String             -- a quoted string (useful for parameters)
-  -- recursive nodes
-  | ExprIndex Ident Expr          -- x[e]
-  | ExprSlice Ident Expr Expr     -- x[e1 : e2]
-  | ExprSliceOff Ident Expr Int   -- x[e : e+i] -- 'i' can be negative
-  | ExprConcat [Expr]
-  | ExprCond Expr Expr Expr
-  | ExprUnary UnaryOp Expr
-  | ExprBinary BinaryOp Expr Expr
-  | ExprFunCall Ident [Expr]      -- function application
+
+  = ExprNum Integer               -- ^ un unsized number
+  | ExprLit Size Integer          -- ^ a sized bitvector
+  | ExprBit Int                   -- ^ in vhdl, bits are different than 1-bit bitvectors
+  | ExprVar Ident                 -- ^ a variable ference
+  | ExprString String             -- ^ a quoted string (useful for parameters)
+
+  | ExprIndex Ident Expr          -- ^ @x[e]@
+  | ExprSlice Ident Expr Expr     -- ^ @x[e1 : e2]@
+  | ExprSliceOff Ident Expr Int   -- ^ @x[e : e+i]@, where @i@ can be negative
+  | ExprConcat [Expr]             -- ^ concatenation
+  | ExprCond Expr Expr Expr       -- ^ conditional expression
+  | ExprUnary UnaryOp Expr        -- ^ application of a unary operator
+  | ExprBinary BinaryOp Expr Expr -- ^ application of a binary operator
+  | ExprFunCall Ident [Expr]      -- ^ a function application
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- behavioral statement
 data Stmt
-  = Assign LValue Expr         -- non-blocking assignment
-  | If Expr Stmt (Maybe Stmt)  -- if statement
+  = Assign LValue Expr         -- ^ non-blocking assignment
+  | If Expr Stmt (Maybe Stmt)  -- ^ @if@ statement
   | Case Expr [([Expr], Stmt)] (Maybe Stmt)
-                               -- case statement, with optional default case
-  | Seq [Stmt]                 -- multiple statements (between 'begin' and 'end')
-  | FunCallStmt Ident [Expr]   -- a function call that can appear as a statement,
+                               -- ^ case statement, with optional default case
+  | Seq [Stmt]                 -- ^ multiple statements in sequence
+  | FunCallStmt Ident [Expr]   -- ^ a function call that can appear as a statement,
                                -- useful for calling Verilog tasks (e.g. $readmem).
   deriving (Eq, Ord, Show, Data, Typeable)
 
--- not all expressions are allowed on the LHS of an assignment, but we're lazy
+-- | Not all expressions are allowed on the LHS of an assignment, but we're lazy
 -- and don't enforce that restriction in the AST.
 type LValue = Expr
 
--- These operators include almost all VHDL and Verilog operators.
--- Notes
---  * precedence and pretty-printing are language specific, and defined elsewhere.
---  * exponentation and rotate operators were introduced in Verilog-2001
---  * some operators are not prefix/infix, such as verilog concatenation and the
---    conditional (?) operator.  those operators are defined elsewhere.
---  * VHDL has both "logical" and "arithmetic" shift operators, which we don't yet support here.
---  * VHDL has both a 'mod' and a 'rem' operator, but so far we only define Modulo.
---  * VHDL has a concat operator (&) that isn't yet supported here.
---  * VHDL has 'abs' operator that isn't yet supported here.
+-- | Unary operators
+-- 
+-- 'LNeg' is logical negation, 'Neg' is bitwise negation.  'UAnd', 'UNand',
+-- 'UOr', 'UNor', 'UXor', and 'UXnor' are sometimes called \"reduction
+-- operators\".
 
 data UnaryOp
-  -- LNeg is logical negation, Neg is bitwise negation
-  -- UAnd/UNand/UOr/UNor/UXor/UXnor are sometimes called "reduction operators"
   = UPlus | UMinus | LNeg | Neg | UAnd | UNand | UOr | UNor | UXor | UXnor
   deriving (Eq, Ord, Show, Data, Typeable)
+
+-- | Binary operators.
+--
+-- These operators include almost all VHDL and Verilog operators.
+--
+--  * precedence and pretty-printing are language specific, and defined elsewhere.
+--
+--  * exponentation operators were introduced in Verilog-2001.
+--
+--  * some operators are not prefix/infix, such as verilog concatenation and the
+--    conditional (@x ? y : z@) operator.  those operators are defined in
+--    'Expr'.
+--
+--  * VHDL has both \"logical\" and \"barithmetic\" shift operators, which we
+--    don't yet distinguish between here.
+--
+--  * VHDL has both a @mod@ and a @rem@ operator, but so far we only define
+--    'Modulo'.
+--
+--  * VHDL has a concat operator (@&@) that isn't yet supported here.  Use
+--    'ExprConcat' instead.
+--
+--  * VHDL has an @abs@ operator that isn't yet supported here.
 
 data BinaryOp
   = Pow | Plus | Minus | Times | Divide | Modulo      -- arithmetic
