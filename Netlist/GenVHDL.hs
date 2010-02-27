@@ -10,13 +10,22 @@ import Data.Maybe(catMaybes)
 
 
 genVHDL :: Module -> Doc
-genVHDL m =  entity m $$
+genVHDL m =  imports $$
+             entity m $$
              architecture m
+
+imports = vcat $ [
+          text "library IEEE" <> semi,
+          text "use IEEE.STD_LOGIC_1164.ALL" <> semi,
+          text "use IEEE.NUMERIC_STD.ALL" <> semi,
+          text "use work.all" <> semi
+          ]
+
 
 entity :: Module -> Doc
 entity m = text "entity" <+> text (module_name m) <+> text "is" $$
             nest 2 (text "port" <> parens (vcat $ punctuate semi ports)) $$
-            text "end" <+> text "entity" <> semi
+            text "end" <+> text "entity" <+> text (module_name m) <> semi
 
   where name = text (module_name m)
         ports = [text i <+> colon <+> text "in" <+> slv_type ran | (i,ran) <- module_inputs m ] ++
@@ -24,11 +33,22 @@ entity m = text "entity" <+> text (module_name m) <+> text "is" $$
 
 
 architecture :: Module -> Doc
-architecture m = text "architecture" <+> text "synth" <+> text "of" <+>  text (module_name m) <+> text "is" $$
+architecture m = text "architecture" <+> text "str" <+> text "of" <+>  text (module_name m) <+> text "is" $$
+                 utilities $$
                  nest 2 (decls (module_decls m)) $$
                  text "begin" $$
                  nest 2 (insts (module_decls m)) $$
                  text "end" <+> text "architecture" <+> text (module_name m) <> semi
+
+utilities = vcat $ [
+ text "function active_high (arg : boolean) return std_ulogic is",
+ text "  begin",
+ text "  if arg then return '1';",
+ text "    else return '0';",
+ text "   end if;",
+ text "end function active_high;"
+            ]
+
 
 
 decls :: [Decl] -> Doc
@@ -195,7 +215,8 @@ binOp RotateLeft = "rotl"
 binOp RotateRight = "rotr"
 
 
-slv_type r =  text "std_logic_vector" <>
-              (maybe empty range r)
+slv_type Nothing = text "std_logic"
+slv_type (Just r) =  text "std_logic_vector" <> range r
+
 
 range (Range high low) = parens (expr high <+> text "downto" <+> expr low)
