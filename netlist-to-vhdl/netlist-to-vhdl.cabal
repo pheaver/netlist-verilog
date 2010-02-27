@@ -1,0 +1,35 @@
+name:           netlist-to-VHDL
+version:        0.1
+synopsis:       Convert a Netlist AST to VHDL
+description:    Convert a Netlist AST to VHDL
+category:       Language
+license:        AllRightsReserved
+copyright:      Copyright (c) 2010 University of Kansas
+author:         Garrin Kimmell
+maintainer:     kimmell@ku.edu
+package-url:    git://github.com/pheaver/netlist-verilog.git
+build-type:     Simple
+cabal-version:  >=1.6
+
+flag base4
+   Description: Compile using base-4 instead of base-3
+   Default: True
+
+flag split-base
+
+Library
+  ghc-options:          -Wall
+
+  exposed-modules:      Language.Netlist.GenVHDL
+
+  build-depends:        netlist == 0.1, pretty >= 1.0
+
+  -- TODO figure out exactly which package versions we are compatible with
+  if flag(split-base)
+--    build-depends:
+    if flag(base4)
+       build-depends:   base == 4.*
+    else
+       build-depends:   base == 3.*
+  else
+    build-depends:      base < 3
