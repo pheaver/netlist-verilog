@@ -1,8 +1,6 @@
-module Netlist.GenVHDL(genVHDL) where
+module Language.Netlist.GenVHDL(genVHDL) where
 
-import Netlist.AST
-import Netlist.Examples
-import Operators
+import Language.Netlist.AST
 
 import Text.PrettyPrint
 import Data.Maybe(catMaybes)
