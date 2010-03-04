@@ -22,7 +22,7 @@ Library
 
   exposed-modules:      Language.Netlist.GenVHDL
 
-  build-depends:        netlist == 0.1, pretty >= 1.0
+  build-depends:        netlist == 0.1, pretty >= 1.0, syb
 
   -- TODO figure out exactly which package versions we are compatible with
   if flag(split-base)

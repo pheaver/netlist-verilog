@@ -4,9 +4,8 @@ import Language.Netlist.AST
 
 import Text.PrettyPrint
 import Data.Maybe(catMaybes)
-
-
-
+import Data.Generics.Schemes
+import Data.List(nub, (\\))
 genVHDL :: Module -> Doc
 genVHDL m =  imports $$
              entity m $$
@@ -41,7 +40,7 @@ architecture m = text "architecture" <+> text "str" <+> text "of" <+>  text (mod
 utilities = vcat $ [
  text "function active_high (arg : boolean) return std_ulogic is",
  text "  begin",
- text "  if arg then return '1';",
+ text "  if arg  then return '1';",
  text "    else return '0';",
  text "   end if;",
  text "end function active_high;"
@@ -81,12 +80,16 @@ insts is = case catMaybes $ zipWith inst gensyms is of
 
 inst :: String -> Decl -> Maybe Doc
 inst _ (NetAssign i e) = Just $ text i <+> text "<=" <+> expr e
-inst gensym (ProcessDecl evs) = Just $
+
+inst gensym proc@(ProcessDecl evs) = Just $
     text gensym <+> colon <+> text "process" <> senlist <+> text "is" $$
     text "begin" $$
     nest 2 (pstmts evs) $$
     text "end process" <+> text gensym
-  where senlist = parens empty
+  where senlist = parens $ cat $ punctuate comma $ map expr $   mkSensitivityList proc
+
+
+
 inst _ (InstDecl nm inst gens ins outs) = Just $
   text inst <+> colon <+> text "entity" <+> text nm $$
        gs $$
@@ -168,10 +171,22 @@ expr (ExprCond c t e) = expr t <+> text "when" <+> expr c <+> text "else" <+> ex
 expr x = text (show x)
 
 
-lookupUnary op e = text (unOp op) <> e
+-- | mkSensitivityList takes a process and extracts the appropriate sensitify list
+mkSensitivityList  proc@(ProcessDecl evs) = nub labels \\ nub as
+  where as = map getLHS $ listify isAssign proc
+        isAssign (Assign _ _) = True
+        isAssign _ = False
+        getLHS (Assign lhs _) = lhs -- Only applied to as
+
+        labels = listify isVar proc
+
+        isVar (ExprVar v) = True
+        isVar _ = False
+
+lookupUnary op e = text (unOp op) <> parens e
 unOp UPlus = ""
 unOp UMinus = "-"
-unOp LNeg = "!"
+unOp LNeg = "not"
 unOp UAnd = "and"
 unOp UNand = "nand"
 unOp UOr = "or"
@@ -182,7 +197,7 @@ unOp Neg = "-"
 
 
 -- "(\\(.*\\), text \\(.*\\)),"
-lookupBinary op a b = a <+> text (binOp op) <+> b
+lookupBinary op a b = parens $ a <+> text (binOp op) <+> b
 
 
 binOp Pow = "**"
