@@ -21,7 +21,7 @@ imports = vcat $ [
 
 entity :: Module -> Doc
 entity m = text "entity" <+> text (module_name m) <+> text "is" $$
-            nest 2 (text "port" <> parens (vcat $ punctuate semi ports)) $$
+            nest 2 (text "port" <> parens (vcat $ punctuate semi ports) <> semi) $$
             text "end" <+> text "entity" <+> text (module_name m) <> semi
 
   where name = text (module_name m)
@@ -35,7 +35,7 @@ architecture m = text "architecture" <+> text "str" <+> text "of" <+>  text (mod
                  nest 2 (decls (module_decls m)) $$
                  text "begin" $$
                  nest 2 (insts (module_decls m)) $$
-                 text "end" <+> text "architecture" <+> text (module_name m) <> semi
+                 text "end" <+> text "architecture" <+> text "str" <> semi
 
 utilities = vcat $ [
  text "function active_high (arg : boolean) return std_ulogic is",
@@ -118,7 +118,7 @@ inst gensym (InitProcessDecl s) = Just $
 inst _ d = Nothing
 
 
-pstmts ss = (vcat $ zipWith mkIf is ss) $$ (text "else" <+> text "null") <> semi $$ text "end if"
+pstmts ss = (vcat $ zipWith mkIf is ss)  $$ text "end if" <> semi
   where is = (text "if"):(repeat (text "elsif"))
         mkIf i (p,s) = i <+> nest 2 (event p) <+> text "then" $$
                        nest 2 (stmt s)
@@ -127,11 +127,11 @@ pstmts ss = (vcat $ zipWith mkIf is ss) $$ (text "else" <+> text "null") <> semi
 event (Event i PosEdge) = text "rising_edge" <> parens (expr i)
 event (Event i NegEdge) = text "falling_edge" <> parens (expr i)
 
-stmt (Assign l r) = expr l <+> text "<=" <+> expr r
-stmt (Seq ss) = vcat (punctuate semi (map stmt ss)) <> semi
+stmt (Assign l r) = expr l <+> text "<=" <+> expr r <> semi
+stmt (Seq ss) = vcat (map stmt ss)
 stmt (If e t Nothing) =
   text "if" <+> expr e <+> text "then" $$
-  nest 2 (stmt t <> semi) $$
+  nest 2 (stmt t) $$
   text "end if" <> semi
 stmt (If p t (Just e)) =
   text "if" <+> expr p <+> text "then" $$
@@ -181,6 +181,8 @@ mkSensitivityList  proc@(ProcessDecl evs) = nub labels \\ nub as
         labels = listify isVar proc
 
         isVar (ExprVar v) = True
+        isVar (ExprIndex _ _) = True
+        isVar (ExprSlice _ _ _) = True
         isVar _ = False
 
 lookupUnary op e = text (unOp op) <> parens e
