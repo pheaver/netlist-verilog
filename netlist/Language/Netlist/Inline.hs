@@ -87,6 +87,12 @@ shouldInline ignore deps x e
       ExprSlice _ _ _           -> True
       -- ExprSliceOff _ _ _        -> True
 
+      -- never inline case expressions.  as far as we know, there's no case
+      -- *expression* in Verilog or VHDL.  we leave ExprCase alone here so that
+      -- it may be easier to translate to, for example, a case *statement* in a
+      -- combinational process in HDL.
+      ExprCase {}               -> False
+
       -- any complex expressions should only be inlined if they're used once.
       _                         -> n == 1
 
