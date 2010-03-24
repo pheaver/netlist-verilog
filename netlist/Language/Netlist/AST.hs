@@ -147,6 +147,9 @@ data Expr
   | ExprIndex Ident Expr          -- ^ @x[e]@
   | ExprSlice Ident Expr Expr     -- ^ @x[e1 : e2]@
   | ExprSliceOff Ident Expr Int   -- ^ @x[e : e+i]@, where @i@ can be negative
+  | ExprCase Expr [([ConstExpr], Expr)] (Maybe Expr)
+                                  -- ^ case expression.  supports multiple matches
+                                  -- per result value, and an optional default value
   | ExprConcat [Expr]             -- ^ concatenation
   | ExprCond Expr Expr Expr       -- ^ conditional expression
   | ExprUnary UnaryOp Expr        -- ^ application of a unary operator
@@ -170,7 +173,7 @@ data Stmt
 type LValue = Expr
 
 -- | Unary operators
--- 
+--
 -- 'LNeg' is logical negation, 'Neg' is bitwise negation.  'UAnd', 'UNand',
 -- 'UOr', 'UNor', 'UXor', and 'UXnor' are sometimes called \"reduction
 -- operators\".
@@ -339,20 +342,24 @@ instance Binary Expr where
                                             put x1
                                             put x2
                                             put x3
-                ExprConcat x1 -> do putWord8 8
-                                    put x1
-                ExprCond x1 x2 x3 -> do putWord8 9
+                ExprCase x1 x2 x3 -> do putWord8 8
                                         put x1
                                         put x2
                                         put x3
-                ExprUnary x1 x2 -> do putWord8 10
+                ExprConcat x1 -> do putWord8 9
+                                    put x1
+                ExprCond x1 x2 x3 -> do putWord8 10
+                                        put x1
+                                        put x2
+                                        put x3
+                ExprUnary x1 x2 -> do putWord8 11
                                       put x1
                                       put x2
-                ExprBinary x1 x2 x3 -> do putWord8 11
+                ExprBinary x1 x2 x3 -> do putWord8 12
                                           put x1
                                           put x2
                                           put x3
-                ExprFunCall x1 x2 -> do putWord8 12
+                ExprFunCall x1 x2 -> do putWord8 13
                                         put x1
                                         put x2
         get
@@ -381,19 +388,23 @@ instance Binary Expr where
                            x3 <- get
                            return (ExprSliceOff x1 x2 x3)
                    8 -> do x1 <- get
-                           return (ExprConcat x1)
-                   9 -> do x1 <- get
                            x2 <- get
                            x3 <- get
-                           return (ExprCond x1 x2 x3)
+                           return (ExprCase x1 x2 x3)
+                   9 -> do x1 <- get
+                           return (ExprConcat x1)
                    10 -> do x1 <- get
                             x2 <- get
-                            return (ExprUnary x1 x2)
+                            x3 <- get
+                            return (ExprCond x1 x2 x3)
                    11 -> do x1 <- get
+                            x2 <- get
+                            return (ExprUnary x1 x2)
+                   12 -> do x1 <- get
                             x2 <- get
                             x3 <- get
                             return (ExprBinary x1 x2 x3)
-                   12 -> do x1 <- get
+                   13 -> do x1 <- get
                             x2 <- get
                             return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expr"

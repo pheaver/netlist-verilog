@@ -3,7 +3,8 @@ version:        0.1
 synopsis:       Convert a Netlist AST to a Verilog AST
 description:    Convert a Netlist AST to a Verilog AST
 category:       Language
-license:        AllRightsReserved
+license:        BSD3
+license-file:   LICENSE
 copyright:      Copyright (c) 2010 Signali Corp.
 author:         Philip Weaver
 maintainer:     pweaver@signalicorp.com
