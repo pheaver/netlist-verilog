@@ -167,7 +167,12 @@ expr (ExprConcat ss) = hcat $ punctuate (text " & ") (map expr ss)
 expr (ExprUnary op e) = lookupUnary op (expr e)
 expr (ExprBinary op a b) = lookupBinary op (expr a) (expr b)
 expr (ExprFunCall f args) = text f <> parens (cat $ punctuate comma $ map expr args)
-expr (ExprCond c t e) = expr t <+> text "when" <+> expr c <+> text "else" <+> expr e
+expr (ExprCond c t e) = expr t <+> text "when" <+> expr c <+> text "else" $$ expr e
+expr (ExprCase _ [] Nothing) = text "0"
+expr (ExprCase _ [] (Just e)) = expr e
+expr (ExprCase e (([],_):alts) def) = expr (ExprCase e alts def)
+expr (ExprCase e ((p:ps,alt):alts) def) = 
+	expr (ExprCond (ExprBinary Equals e p) alt (ExprCase e ((ps,alt):alts) def))
 expr x = text (show x)
 
 
