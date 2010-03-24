@@ -5,7 +5,8 @@ description:    A very simplified and generic netlist designed to be compatible 
                 Hardware Description Languages (HDLs) like Verilog and VHDL.
                 Includes a simple inliner.
 category:       Language
-license:        AllRightsReserved
+license:        BSD3
+license-file:   LICENSE
 copyright:      Copyright (c) 2010 Signali Corp.
 author:         Philip Weaver
 maintainer:     pweaver@signalicorp.com
