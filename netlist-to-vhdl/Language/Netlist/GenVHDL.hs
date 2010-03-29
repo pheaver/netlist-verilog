@@ -60,10 +60,11 @@ decl (NetDecl i r (Just init)) = Just $
 decl (MemDecl i Nothing dsize) = Just $
     text "signal" <+> text i <+> colon <+> slv_type dsize
 
-decl (MemDecl i asize dsize) = Just $
+decl (MemDecl i (Just asize) dsize) = Just $
   text "type" <+> mtype  <+> text "is" <+>
-       text "array" <+> text "range" <+> text "of" <+> text "ldots" <> semi $$
-  text "signal" <+> text i <+> colon <+> mtype
+       text "array" <+> range asize <+> text "of" <+> slv_type dsize <> semi $$
+  text "signal" <+> text i <> text "_ram" <+> colon <+> mtype <> semi $$
+  text "signal" <+> text i <+> colon <+> slv_type dsize
  where mtype = text i <> text "_memory_type"
 
 decl d = Nothing
