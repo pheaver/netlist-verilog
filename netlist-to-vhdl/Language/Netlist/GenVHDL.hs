@@ -178,18 +178,15 @@ expr x = text (show x)
 
 
 -- | mkSensitivityList takes a process and extracts the appropriate sensitify list
-mkSensitivityList  proc@(ProcessDecl evs) = nub labels \\ nub as
-  where as = map getLHS $ listify isAssign proc
-        isAssign (Assign _ _) = True
-        isAssign _ = False
-        getLHS (Assign lhs _) = lhs -- Only applied to as
+--
 
-        labels = listify isVar proc
-
-        isVar (ExprVar v) = True
-        isVar (ExprIndex _ _) = True
-        isVar (ExprSlice _ _ _) = True
-        isVar _ = False
+mkSensitivityList  proc@(ProcessDecl evs) = nub event_names
+  where event_names = 
+	 	--   AJG: This is now *only* based on the 'Event' vars, nothing else.
+		map (\ (e,_) -> case e of
+				 Event (ExprVar name) _ -> ExprVar name
+				 _ -> error $ "strange form for mkSensitivityList " ++ show e
+		    ) evs
 
 lookupUnary op e = text (unOp op) <> parens e
 unOp UPlus = ""
