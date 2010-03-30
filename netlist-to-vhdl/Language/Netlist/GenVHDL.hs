@@ -156,8 +156,15 @@ stmt (Case d ps def) =
 expr (ExprNum i) = int $ fromIntegral i
 expr (ExprBit x) = quotes (int x)
 expr (ExprLit 1 val) = quotes (integer val)
-expr (ExprLit size val) =
-  text "std_logic_vector" <> parens (integer val <> comma <+> int size)
+expr (ExprLit size val) = doubleQuotes 
+	$ text
+	$ map (\ x -> if x then '1' else '0')
+	$ map odd 
+	$ reverse 
+	$ take size 
+	$ map (`mod` 2) 
+	$ iterate (`div` 2)
+	$ val
 expr (ExprVar n) = text n
 expr (ExprIndex s i) = text s <> parens (expr i)
 expr (ExprSlice s h l)
