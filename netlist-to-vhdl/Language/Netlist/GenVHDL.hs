@@ -64,8 +64,7 @@ decl (MemDecl i Nothing dsize) = Just $
 decl (MemDecl i (Just asize) dsize) = Just $
   text "type" <+> mtype  <+> text "is" <+>
        text "array" <+> range asize <+> text "of" <+> slv_type dsize <> semi $$
-  text "signal" <+> text i <> text "_ram" <+> colon <+> mtype <> semi $$
-  text "signal" <+> text i <+> colon <+> slv_type dsize
+  text "signal" <+> text i <> text "_ram" <+> colon <+> mtype 
  where mtype = text i <> text "_memory_type"
 
 decl d = Nothing
