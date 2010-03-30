@@ -14,6 +14,7 @@ genVHDL m =  imports $$
 imports = vcat $ [
           text "library IEEE" <> semi,
           text "use IEEE.STD_LOGIC_1164.ALL" <> semi,
+	  text "use IEEE.STD_LOGIC_UNSIGNED.ALL" <> semi,
           text "use IEEE.NUMERIC_STD.ALL" <> semi,
           text "use work.all" <> semi
           ]
