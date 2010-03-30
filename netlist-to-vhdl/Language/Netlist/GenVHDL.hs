@@ -101,7 +101,7 @@ inst _ (InstDecl nm inst gens ins outs) = Just $
         text "generic map" <+>
          (parens (cat (punctuate comma  [text i <+> text "=>" <+> expr e | (i,e) <- gens])))
    -- Assume that ports is never null
-   ps = text "generic map" <+>
+   ps = text "port map" <+>
          parens (cat (punctuate comma  [text i <+> text "=>" <+> expr e | (i,e) <- (ins ++ outs)]))
 
 
@@ -179,7 +179,7 @@ expr (ExprCond c t e) = expr t <+> text "when" <+> expr c <+> text "else" $$ exp
 expr (ExprCase _ [] Nothing) = text "0"
 expr (ExprCase _ [] (Just e)) = expr e
 expr (ExprCase e (([],_):alts) def) = expr (ExprCase e alts def)
-expr (ExprCase e ((p:ps,alt):alts) def) = 
+expr (ExprCase e ((p:ps,alt):alts) def) =
 	expr (ExprCond (ExprBinary Equals e p) alt (ExprCase e ((ps,alt):alts) def))
 expr x = text (show x)
 
