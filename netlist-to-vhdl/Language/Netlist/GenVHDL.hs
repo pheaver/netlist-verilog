@@ -14,6 +14,7 @@ genVHDL m =  imports $$
 imports = vcat $ [
           text "library IEEE" <> semi,
           text "use IEEE.STD_LOGIC_1164.ALL" <> semi,
+	  text "use IEEE.STD_LOGIC_UNSIGNED.ALL" <> semi,
           text "use IEEE.NUMERIC_STD.ALL" <> semi,
           text "use work.all" <> semi
           ]
@@ -60,10 +61,10 @@ decl (NetDecl i r (Just init)) = Just $
 decl (MemDecl i Nothing dsize) = Just $
     text "signal" <+> text i <+> colon <+> slv_type dsize
 
-decl (MemDecl i asize dsize) = Just $
+decl (MemDecl i (Just asize) dsize) = Just $
   text "type" <+> mtype  <+> text "is" <+>
-       text "array" <+> text "range" <+> text "of" <+> text "ldots" <> semi $$
-  text "signal" <+> text i <+> colon <+> mtype
+       text "array" <+> range asize <+> text "of" <+> slv_type dsize <> semi $$
+  text "signal" <+> text i <> text "_ram" <+> colon <+> mtype 
  where mtype = text i <> text "_memory_type"
 
 decl d = Nothing
@@ -155,8 +156,15 @@ stmt (Case d ps def) =
 expr (ExprNum i) = int $ fromIntegral i
 expr (ExprBit x) = quotes (int x)
 expr (ExprLit 1 val) = quotes (integer val)
-expr (ExprLit size val) =
-  text "std_logic_vector" <> parens (integer val <> comma <+> int size)
+expr (ExprLit size val) = doubleQuotes 
+	$ text
+	$ map (\ x -> if x then '1' else '0')
+	$ map odd 
+	$ reverse 
+	$ take size 
+	$ map (`mod` 2) 
+	$ iterate (`div` 2)
+	$ val
 expr (ExprVar n) = text n
 expr (ExprIndex s i) = text s <> parens (expr i)
 expr (ExprSlice s h l)
@@ -171,24 +179,21 @@ expr (ExprCond c t e) = expr t <+> text "when" <+> expr c <+> text "else" $$ exp
 expr (ExprCase _ [] Nothing) = text "0"
 expr (ExprCase _ [] (Just e)) = expr e
 expr (ExprCase e (([],_):alts) def) = expr (ExprCase e alts def)
-expr (ExprCase e ((p:ps,alt):alts) def) = 
+expr (ExprCase e ((p:ps,alt):alts) def) =
 	expr (ExprCond (ExprBinary Equals e p) alt (ExprCase e ((ps,alt):alts) def))
 expr x = text (show x)
 
 
 -- | mkSensitivityList takes a process and extracts the appropriate sensitify list
-mkSensitivityList  proc@(ProcessDecl evs) = nub labels \\ nub as
-  where as = map getLHS $ listify isAssign proc
-        isAssign (Assign _ _) = True
-        isAssign _ = False
-        getLHS (Assign lhs _) = lhs -- Only applied to as
+--
 
-        labels = listify isVar proc
-
-        isVar (ExprVar v) = True
-        isVar (ExprIndex _ _) = True
-        isVar (ExprSlice _ _ _) = True
-        isVar _ = False
+mkSensitivityList  proc@(ProcessDecl evs) = nub event_names
+  where event_names = 
+	 	--   AJG: This is now *only* based on the 'Event' vars, nothing else.
+		map (\ (e,_) -> case e of
+				 Event (ExprVar name) _ -> ExprVar name
+				 _ -> error $ "strange form for mkSensitivityList " ++ show e
+		    ) evs
 
 lookupUnary op e = text (unOp op) <> parens e
 unOp UPlus = ""
