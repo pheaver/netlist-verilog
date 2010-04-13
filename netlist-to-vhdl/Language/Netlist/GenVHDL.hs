@@ -98,7 +98,7 @@ inst _ (InstDecl nm inst gens ins outs) = Just $
  where
    gs | null gens = empty
       | otherwise =
-        text "port map" <+>
+        text "generic map" <+>
          (parens (cat (punctuate comma  [text i <+> text "=>" <+> expr e | (i,e) <- gens])))
    -- Assume that ports is never null
    ps = text "port map" <+>
