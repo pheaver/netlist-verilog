@@ -29,8 +29,8 @@ import Language.Netlist.AST
 -- expression is inlined (and it\'s declaration removed) if it only used in one
 -- place in the entire module.
 inlineModule :: Module -> Module
-inlineModule (Module name inputs outputs decls)
-  = Module name inputs outputs decls''
+inlineModule (Module name inputs outputs statics decls)
+  = Module name inputs outputs statics decls''
   where
     deps    = getIdentExprs decls
     bs      = getBindings decls

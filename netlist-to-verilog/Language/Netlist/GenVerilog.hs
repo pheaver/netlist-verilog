@@ -32,9 +32,12 @@ import qualified Language.Verilog.AST as V
 -- -----------------------------------------------------------------------------
 
 mk_module :: Module -> V.Module
-mk_module (Module name ins outs decls)
+mk_module (Module name ins outs statics decls)
   = V.Module (mk_ident name) ports items
   where
+    params= [ V.ParamDeclItem (V.ParamDecl [V.ParamAssign (mk_ident x) (mk_expr expr)])
+              | (x, expr) <- statics
+            ]
     ports = map (mk_ident . fst) ins ++ map (mk_ident . fst) outs
     items = [ V.InputDeclItem (V.InputDecl (fmap mk_range mb_range) [mk_ident x])
               | (x, mb_range) <- ins ] ++
@@ -42,6 +45,7 @@ mk_module (Module name ins outs decls)
             [ V.OutputDeclItem (V.OutputDecl (fmap mk_range mb_range) [mk_ident x])
               | (x, mb_range) <- outs ] ++
 
+            params ++
             concatMap mk_decl decls
 
 

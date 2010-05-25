@@ -21,7 +21,7 @@ import Language.Netlist.Util
 -- -----------------------------------------------------------------------------
 
 t :: Module
-t = Module "foo" (f ins) (f outs) ds
+t = Module "foo" (f ins) (f outs) [] ds
   where
     f xs = [ (x, makeRange Down sz) | (x, sz) <- xs ]
     ins = [("clk", 1), ("reset", 1), ("enable", 1), ("x", 16)]

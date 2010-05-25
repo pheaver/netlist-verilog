@@ -47,8 +47,9 @@ data Module = Module
   { module_name    :: Ident
   , module_inputs  :: [(Ident, Maybe Range)]
   , module_outputs :: [(Ident, Maybe Range)]
+  , module_statics :: [(Ident, ConstExpr)]
+                   -- static parameters (VHDL "generic", Verilog "parameter")
   , module_decls   :: [Decl]
-  -- TODO: support static parameters (VHDL "generic", Verilog "parameter")
   }
   deriving (Eq, Ord, Show, Data, Typeable)
 
@@ -220,17 +221,19 @@ data BinaryOp
 
 
 instance Binary Module where
-        put (Module x1 x2 x3 x4)
+        put (Module x1 x2 x3 x4 x5)
           = do put x1
                put x2
                put x3
                put x4
+               put x5
         get
           = do x1 <- get
                x2 <- get
                x3 <- get
                x4 <- get
-               return (Module x1 x2 x3 x4)
+               x5 <- get
+               return (Module x1 x2 x3 x4 x5)
 
 
 instance Binary Decl where
