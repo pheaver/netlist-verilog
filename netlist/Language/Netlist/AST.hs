@@ -158,6 +158,21 @@ data Expr
   | ExprFunCall Ident [Expr]      -- ^ a function application
   deriving (Eq, Ord, Show, Data, Typeable)
 
+instance Num Expr where
+  (+) (ExprNum x) (ExprNum y) = ExprNum (x + y)
+  (+) x y = ExprBinary Plus x y
+
+  (-) (ExprNum x) (ExprNum y) = ExprNum (x - y)
+  (-) x y = ExprBinary Minus x y
+
+  (*) (ExprNum x) (ExprNum y) = ExprNum (x * y)
+  (*) x y = ExprBinary Times x y
+
+  negate      = ExprUnary LNeg
+  abs _       = error "Num Expr: no definition for abs"
+  signum _    = error "Num Expr: no definition for signum"
+  fromInteger = ExprNum
+
 -- behavioral statement
 data Stmt
   = Assign LValue Expr         -- ^ non-blocking assignment
