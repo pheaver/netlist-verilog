@@ -57,14 +57,14 @@ mk_decl (NetDecl x mb_range mb_expr)
   where
     mb_range' = fmap (V.SimpleRange . mk_range) mb_range
     decl = case mb_expr of
-             Nothing   -> V.NetDecl "wire" mb_range' Nothing [mk_ident x]
-             Just expr -> V.NetDeclAssign "wire" Nothing mb_range' Nothing [mkAssign x expr]
+             Nothing   -> V.NetDecl V.Net_wire mb_range' Nothing [mk_ident x]
+             Just expr -> V.NetDeclAssign V.Net_wire Nothing mb_range' Nothing [mkAssign x expr]
 
 mk_decl (NetAssign x expr)
   = [V.AssignItem Nothing Nothing [mkAssign x expr]]
 
 mk_decl (MemDecl x mb_range1 mb_range2)
-  = [V.RegDeclItem (V.RegDecl V.RegReg (fmap mk_range mb_range2)
+  = [V.RegDeclItem (V.RegDecl V.Reg_reg (fmap mk_range mb_range2)
                     [case mb_range1 of
                        Nothing -> V.RegVar (mk_ident x) Nothing
                        Just r  -> V.MemVar (mk_ident x) (mk_range r)

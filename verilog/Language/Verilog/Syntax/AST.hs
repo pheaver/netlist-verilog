@@ -61,8 +61,8 @@ module Language.Verilog.Syntax.AST
   Ident(..), ParamAssign(..), ExpandRange(..), Range(..), RegVar(..),
   DelayOrEventControl(..), DelayControl, EventControl, Delay,
   EventExpr(..), ScalarEventExpr,
-  ChargeStrength, charge_strengths, DriveStrength(..),
-  Strength0, strength0s, Strength1, strength1s, NetType, net_types
+  ChargeStrength, DriveStrength(..),
+  Strength0(..), Strength1(..), NetType(..)
   ) where
 
 import Data.Binary      ( Binary(..), putWord8, getWord8 )
@@ -250,19 +250,6 @@ data NetDecl
 data RegDecl
   = RegDecl RegType (Maybe Range) [RegVar]
   deriving (Eq, Ord, Show, Data, Typeable)
-
-data RegType
-  = RegReg     -- ^ unsigned variable of any size
-  | RegInteger -- ^ signed 32-bit variable
-  | RegTime    -- ^ unsigned 64-bit variable
-  | RegReal    -- ^ double-precision floating point variable
-  deriving (Eq, Ord, Data, Typeable)
-
-instance Show RegType where
-  show RegReg     = "reg"
-  show RegInteger = "integer"
-  show RegTime    = "time"
-  show RegReal    = "real"
 
 -- TODO support multi-dimensional array
 data RegVar
@@ -470,34 +457,75 @@ data EventExpr
 -- "Scalar event expression is an expression that resolves to a one bit value."
 type ScalarEventExpr = Expression
 
-type ChargeStrength = String
+data ChargeStrength
+  = Charge_small | Charge_medium | Charge_large
+  deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
 
-charge_strengths :: [ChargeStrength]
-charge_strengths = [ "small", "medium", "large" ]
+instance Show ChargeStrength where
+  show Charge_small  = "small"
+  show Charge_medium = "medium"
+  show Charge_large  = "large"
 
 data DriveStrength
   = Strength01 Strength0 Strength1
   | Strength10 Strength1 Strength0
   deriving (Eq, Ord, Show, Data, Typeable)
 
-type Strength0 = String
-type Strength1 = String
+data Strength0
+  = Supply0 | Strong0 | Pull0 | Weak0 | Highz0
+  deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
 
-strength0s :: [Strength0]
-strength0s
-  = [ "supply0", "strong0", "pull0", "weak0", "highz0" ]
+instance Show Strength0 where
+  show Supply0 = "supply0"
+  show Strong0 = "strong0"
+  show Pull0   = "pull0"
+  show Weak0   = "weak0"
+  show Highz0  = "highz0"
 
-strength1s :: [Strength1]
-strength1s
-  = [ "supply1", "strong1", "pull1", "weak1", "highz0" ]
+data Strength1
+  = Supply1 | Strong1 | Pull1 | Weak1 | Highz1
+  deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
 
-type NetType = String
+instance Show Strength1 where
+  show Supply1 = "supply1"
+  show Strong1 = "strong1"
+  show Pull1   = "pull1"
+  show Weak1   = "weak1"
+  show Highz1  = "highz1"
 
-net_types :: [NetType]
-net_types
-  = [ "wire", "tri", "tri1", "supply0", "wand"
-    , "triand", "tri0", "supply1", "wor", "trior", "trireg"
-    ]
+data NetType
+  = Net_wire | Net_tri | Net_tri1 | Net_supply0
+  | Net_wand | Net_triand | Net_tri0 | Net_supply1 | Net_wor
+  | Net_trior | Net_triref
+  deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
+
+instance Show NetType where
+  show Net_wire    = "wire"
+  show Net_tri     = "tri"
+  show Net_tri1    = "tri1"
+  show Net_supply0 = "supply0"
+  show Net_wand    = "wand"
+  show Net_triand  = "triand"
+  show Net_tri0    = "tri0"
+  show Net_supply1 = "supply1"
+  show Net_wor     = "wor"
+  show Net_trior   = "trior"
+  show Net_triref  = "triref"
+
+data RegType
+  = Reg_reg      -- ^ unsigned variable of any size = "
+  | Reg_integer  -- ^ signed 32-bit variable
+  | Reg_time     -- ^ unsigned 64-bit variable
+  | Reg_real     -- ^ double-precision floating point variable
+  | Reg_realtime -- ^ (same as above)
+  deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
+
+instance Show RegType where
+  show Reg_reg      = "reg"
+  show Reg_integer  = "integer"
+  show Reg_time     = "time"
+  show Reg_real     = "real"
+  show Reg_realtime = "real"
 
 -- -----------------------------------------------------------------------------
 -- GENERATED START
@@ -804,31 +832,25 @@ instance Binary RegDecl where
                return (RegDecl x1 x2 x3)
 
 
-instance Binary RegType where
+instance Binary RegVar where
         put x
           = case x of
-                RegReg -> putWord8 0
-                RegInteger -> putWord8 1
-                RegTime -> putWord8 2
-                RegReal -> putWord8 3
+                RegVar x1 x2 -> do putWord8 0
+                                   put x1
+                                   put x2
+                MemVar x1 x2 -> do putWord8 1
+                                   put x1
+                                   put x2
         get
           = do i <- getWord8
                case i of
-                   0 -> return RegReg
-                   1 -> return RegInteger
-                   2 -> return RegTime
-                   3 -> return RegReal
-                   _ -> error "Corrupted binary data for RegType"
-
-
-instance Binary RegVar where
-        put (RegVar x1 x2)
-          = do put x1
-               put x2
-        get
-          = do x1 <- get
-               x2 <- get
-               return (RegVar x1 x2)
+                   0 -> do x1 <- get
+                           x2 <- get
+                           return (RegVar x1 x2)
+                   1 -> do x1 <- get
+                           x2 <- get
+                           return (MemVar x1 x2)
+                   _ -> error "Corrupted binary data for RegVar"
 
 
 instance Binary EventDecl where
@@ -1165,6 +1187,21 @@ instance Binary EventExpr where
                    _ -> error "Corrupted binary data for EventExpr"
 
 
+instance Binary ChargeStrength where
+        put x
+          = case x of
+                Charge_small -> putWord8 0
+                Charge_medium -> putWord8 1
+                Charge_large -> putWord8 2
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Charge_small
+                   1 -> return Charge_medium
+                   2 -> return Charge_large
+                   _ -> error "Corrupted binary data for ChargeStrength"
+
+
 instance Binary DriveStrength where
         put x
           = case x of
@@ -1184,4 +1221,90 @@ instance Binary DriveStrength where
                            x2 <- get
                            return (Strength10 x1 x2)
                    _ -> error "Corrupted binary data for DriveStrength"
+
+
+instance Binary Strength0 where
+        put x
+          = case x of
+                Supply0 -> putWord8 0
+                Strong0 -> putWord8 1
+                Pull0 -> putWord8 2
+                Weak0 -> putWord8 3
+                Highz0 -> putWord8 4
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Supply0
+                   1 -> return Strong0
+                   2 -> return Pull0
+                   3 -> return Weak0
+                   4 -> return Highz0
+                   _ -> error "Corrupted binary data for Strength0"
+
+
+instance Binary Strength1 where
+        put x
+          = case x of
+                Supply1 -> putWord8 0
+                Strong1 -> putWord8 1
+                Pull1 -> putWord8 2
+                Weak1 -> putWord8 3
+                Highz1 -> putWord8 4
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Supply1
+                   1 -> return Strong1
+                   2 -> return Pull1
+                   3 -> return Weak1
+                   4 -> return Highz1
+                   _ -> error "Corrupted binary data for Strength1"
+
+
+instance Binary NetType where
+        put x
+          = case x of
+                Net_wire -> putWord8 0
+                Net_tri -> putWord8 1
+                Net_tri1 -> putWord8 2
+                Net_supply0 -> putWord8 3
+                Net_wand -> putWord8 4
+                Net_triand -> putWord8 5
+                Net_tri0 -> putWord8 6
+                Net_supply1 -> putWord8 7
+                Net_wor -> putWord8 8
+                Net_trior -> putWord8 9
+                Net_triref -> putWord8 10
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Net_wire
+                   1 -> return Net_tri
+                   2 -> return Net_tri1
+                   3 -> return Net_supply0
+                   4 -> return Net_wand
+                   5 -> return Net_triand
+                   6 -> return Net_tri0
+                   7 -> return Net_supply1
+                   8 -> return Net_wor
+                   9 -> return Net_trior
+                   10 -> return Net_triref
+                   _ -> error "Corrupted binary data for NetType"
+
+
+instance Binary RegType where
+        put x
+          = case x of
+                Reg_reg -> putWord8 0
+                Reg_integer -> putWord8 1
+                Reg_time -> putWord8 2
+                Reg_real -> putWord8 3
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Reg_reg
+                   1 -> return Reg_integer
+                   2 -> return Reg_time
+                   3 -> return Reg_real
+                   _ -> error "Corrupted binary data for RegType"
 -- GENERATED STOP

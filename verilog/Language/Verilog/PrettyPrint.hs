@@ -165,12 +165,12 @@ ppInOutDecl (InOutDecl mb_range vars)
 
 ppNetDecl :: NetDecl -> Doc
 ppNetDecl (NetDecl t mb_range mb_delay vars)
-  = text t <+>
+  = text (show t) <+>
     mb ppExpandRange mb_range <+>
     mb ppDelay mb_delay <+>
     ppIdents vars <> semi
 ppNetDecl (NetDeclAssign t mb_strength mb_range mb_delay assignments)
-  = text t <+>
+  = text (show t) <+>
     mb ppDriveStrength mb_strength <+>
     mb ppExpandRange mb_range <+>
     mb ppDelay mb_delay <+>
@@ -482,9 +482,9 @@ ppDriveStrength (Strength10 s1 s0)
   = parens (ppStrength1 s1 <> comma <+> ppStrength0 s0)
 
 ppStrength0 :: Strength0 -> Doc
-ppStrength0 = text
+ppStrength0 = text . show
 
 ppStrength1 :: Strength1 -> Doc
-ppStrength1 = text
+ppStrength1 = text . show
 
 -- -----------------------------------------------------------------------------
