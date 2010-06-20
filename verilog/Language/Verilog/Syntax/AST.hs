@@ -43,7 +43,7 @@ module Language.Verilog.Syntax.AST
 
   -- * Items and Declarations
   Item(..), ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
-  NetDecl(..), RegDecl(..), TimeDecl(..), IntegerDecl(..), RealDecl(..), EventDecl(..),
+  NetDecl(..), RegDecl(..), RegType(..), EventDecl(..),
 
   -- * Primitive Instances
 
@@ -102,9 +102,6 @@ data Item
   | InOutDeclItem InOutDecl
   | NetDeclItem NetDecl
   | RegDeclItem RegDecl
-  | TimeDeclItem TimeDecl
-  | IntegerDeclItem IntegerDecl
-  | RealDeclItem RealDecl
   | EventDeclItem EventDecl
   -- TODO: GateDecl
   -- TODO: UDPInst
@@ -134,7 +131,7 @@ data UDP
 data UDPDecl
   = UDPOutputDecl OutputDecl
   | UDPInputDecl InputDecl
-  | UDPRegDecl RegDecl
+  | UDPRegDecl Ident
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- | A UDP initial statement defines the initial value of a UDP.
@@ -248,20 +245,29 @@ data NetDecl
   -- TODO: net decl: trireg <charge_strength>? <expandrange>? <delay>?
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- note that only the "reg" type allows for a vector range before the RegVar,
+-- but we don't make that restriction in the AST.
 data RegDecl
-  = RegDecl (Maybe Range) [RegVar]
+  = RegDecl RegType (Maybe Range) [RegVar]
   deriving (Eq, Ord, Show, Data, Typeable)
 
-newtype TimeDecl
-  = TimeDecl [RegVar]
-  deriving (Eq, Ord, Show, Data, Typeable)
+data RegType
+  = RegReg     -- ^ unsigned variable of any size
+  | RegInteger -- ^ signed 32-bit variable
+  | RegTime    -- ^ unsigned 64-bit variable
+  | RegReal    -- ^ double-precision floating point variable
+  deriving (Eq, Ord, Data, Typeable)
 
-newtype IntegerDecl
-  = IntegerDecl [RegVar]
-  deriving (Eq, Ord, Show, Data, Typeable)
+instance Show RegType where
+  show RegReg     = "reg"
+  show RegInteger = "integer"
+  show RegTime    = "time"
+  show RegReal    = "real"
 
-newtype RealDecl
-  = RealDecl [Ident]
+-- TODO support assigning initial value to registers
+-- TODO support multi-dimensional array
+data RegVar
+  = RegVar Ident (Maybe Range)
   deriving (Eq, Ord, Show, Data, Typeable)
 
 newtype EventDecl
@@ -416,9 +422,6 @@ data CaseItem
 data BlockDecl
   = ParamDeclBlock ParamDecl
   | RegDeclBlock RegDecl
-  | IntegerDeclBlock IntegerDecl
-  | RealDeclBlock RealDecl
-  | TimeDeclBlock TimeDecl
   | EventDeclBlock EventDecl
   deriving (Eq, Ord, Show, Data, Typeable)
 
@@ -438,11 +441,6 @@ data ExpandRange
 
 data Range
   = Range ConstExpr ConstExpr
-  deriving (Eq, Ord, Show, Data, Typeable)
-
--- TODO: shouldn't we be able to give initial values to regs?
-data RegVar
-  = RegVar Ident (Maybe Range)
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data DelayOrEventControl
@@ -556,25 +554,19 @@ instance Binary Item where
                                      put x1
                 RegDeclItem x1 -> do putWord8 5
                                      put x1
-                TimeDeclItem x1 -> do putWord8 6
-                                      put x1
-                IntegerDeclItem x1 -> do putWord8 7
-                                         put x1
-                RealDeclItem x1 -> do putWord8 8
-                                      put x1
-                EventDeclItem x1 -> do putWord8 9
+                EventDeclItem x1 -> do putWord8 6
                                        put x1
-                ModuleInstItem x1 -> do putWord8 10
+                ModuleInstItem x1 -> do putWord8 7
                                         put x1
-                ParamOverrideItem x1 -> do putWord8 11
+                ParamOverrideItem x1 -> do putWord8 8
                                            put x1
-                AssignItem x1 x2 x3 -> do putWord8 12
+                AssignItem x1 x2 x3 -> do putWord8 9
                                           put x1
                                           put x2
                                           put x3
-                InitialItem x1 -> do putWord8 13
+                InitialItem x1 -> do putWord8 10
                                      put x1
-                AlwaysItem x1 -> do putWord8 14
+                AlwaysItem x1 -> do putWord8 11
                                     put x1
         get
           = do i <- getWord8
@@ -592,24 +584,18 @@ instance Binary Item where
                    5 -> do x1 <- get
                            return (RegDeclItem x1)
                    6 -> do x1 <- get
-                           return (TimeDeclItem x1)
-                   7 -> do x1 <- get
-                           return (IntegerDeclItem x1)
-                   8 -> do x1 <- get
-                           return (RealDeclItem x1)
-                   9 -> do x1 <- get
                            return (EventDeclItem x1)
+                   7 -> do x1 <- get
+                           return (ModuleInstItem x1)
+                   8 -> do x1 <- get
+                           return (ParamOverrideItem x1)
+                   9 -> do x1 <- get
+                           x2 <- get
+                           x3 <- get
+                           return (AssignItem x1 x2 x3)
                    10 -> do x1 <- get
-                            return (ModuleInstItem x1)
-                   11 -> do x1 <- get
-                            return (ParamOverrideItem x1)
-                   12 -> do x1 <- get
-                            x2 <- get
-                            x3 <- get
-                            return (AssignItem x1 x2 x3)
-                   13 -> do x1 <- get
                             return (InitialItem x1)
-                   14 -> do x1 <- get
+                   11 -> do x1 <- get
                             return (AlwaysItem x1)
                    _ -> error "Corrupted binary data for Item"
 
@@ -807,34 +793,42 @@ instance Binary NetDecl where
 
 
 instance Binary RegDecl where
-        put (RegDecl x1 x2)
+        put (RegDecl x1 x2 x3)
+          = do put x1
+               put x2
+               put x3
+        get
+          = do x1 <- get
+               x2 <- get
+               x3 <- get
+               return (RegDecl x1 x2 x3)
+
+
+instance Binary RegType where
+        put x
+          = case x of
+                RegReg -> putWord8 0
+                RegInteger -> putWord8 1
+                RegTime -> putWord8 2
+                RegReal -> putWord8 3
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return RegReg
+                   1 -> return RegInteger
+                   2 -> return RegTime
+                   3 -> return RegReal
+                   _ -> error "Corrupted binary data for RegType"
+
+
+instance Binary RegVar where
+        put (RegVar x1 x2)
           = do put x1
                put x2
         get
           = do x1 <- get
                x2 <- get
-               return (RegDecl x1 x2)
-
-
-instance Binary TimeDecl where
-        put (TimeDecl x1) = put x1
-        get
-          = do x1 <- get
-               return (TimeDecl x1)
-
-
-instance Binary IntegerDecl where
-        put (IntegerDecl x1) = put x1
-        get
-          = do x1 <- get
-               return (IntegerDecl x1)
-
-
-instance Binary RealDecl where
-        put (RealDecl x1) = put x1
-        get
-          = do x1 <- get
-               return (RealDecl x1)
+               return (RegVar x1 x2)
 
 
 instance Binary EventDecl where
@@ -1066,13 +1060,7 @@ instance Binary BlockDecl where
                                         put x1
                 RegDeclBlock x1 -> do putWord8 1
                                       put x1
-                IntegerDeclBlock x1 -> do putWord8 2
-                                          put x1
-                RealDeclBlock x1 -> do putWord8 3
-                                       put x1
-                TimeDeclBlock x1 -> do putWord8 4
-                                       put x1
-                EventDeclBlock x1 -> do putWord8 5
+                EventDeclBlock x1 -> do putWord8 2
                                         put x1
         get
           = do i <- getWord8
@@ -1082,12 +1070,6 @@ instance Binary BlockDecl where
                    1 -> do x1 <- get
                            return (RegDeclBlock x1)
                    2 -> do x1 <- get
-                           return (IntegerDeclBlock x1)
-                   3 -> do x1 <- get
-                           return (RealDeclBlock x1)
-                   4 -> do x1 <- get
-                           return (TimeDeclBlock x1)
-                   5 -> do x1 <- get
                            return (EventDeclBlock x1)
                    _ -> error "Corrupted binary data for BlockDecl"
 
@@ -1131,16 +1113,6 @@ instance Binary Range where
           = do x1 <- get
                x2 <- get
                return (Range x1 x2)
-
-
-instance Binary RegVar where
-        put (RegVar x1 x2)
-          = do put x1
-               put x2
-        get
-          = do x1 <- get
-               x2 <- get
-               return (RegVar x1 x2)
 
 
 instance Binary DelayOrEventControl where

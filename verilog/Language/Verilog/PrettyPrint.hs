@@ -55,9 +55,6 @@ ppItem (OutputDeclItem x)  = ppOutputDecl x
 ppItem (InOutDeclItem x)   = ppInOutDecl x
 ppItem (NetDeclItem x)     = ppNetDecl x
 ppItem (RegDeclItem x)     = ppRegDecl x
-ppItem (TimeDeclItem x)    = ppTimeDecl x
-ppItem (IntegerDeclItem x) = ppIntegerDecl x
-ppItem (RealDeclItem x)    = ppRealDecl x
 ppItem (EventDeclItem x)   = ppEventDecl x
 ppItem (ModuleInstItem x)  = ppModuleInst x
 ppItem (ParamOverrideItem xs)
@@ -89,7 +86,7 @@ ppUDP (UDP name output_var input_vars decls maybe_initial table_definition)
 ppUDPDecl :: UDPDecl -> Doc
 ppUDPDecl (UDPOutputDecl d) = ppOutputDecl d
 ppUDPDecl (UDPInputDecl d)  = ppInputDecl d
-ppUDPDecl (UDPRegDecl d)    = ppRegDecl d
+ppUDPDecl (UDPRegDecl x)    = text "reg" <+> ppIdent x <> semi
 
 ppUDPInitialStatement :: UDPInitialStatement -> Doc
 ppUDPInitialStatement (UDPInitialStatement name value)
@@ -180,20 +177,8 @@ ppNetDecl (NetDeclAssign t mb_strength mb_range mb_delay assignments)
     commasep (map ppAssignment assignments) <> semi
 
 ppRegDecl :: RegDecl -> Doc
-ppRegDecl (RegDecl mb_range vars)
-  = text "reg" <+> mb ppRange mb_range <+> ppRegVars vars <> semi
-
-ppTimeDecl :: TimeDecl -> Doc
-ppTimeDecl (TimeDecl vars)
-  = text "time" <+> ppRegVars vars <> semi
-
-ppIntegerDecl :: IntegerDecl -> Doc
-ppIntegerDecl (IntegerDecl vars)
-  = text "integer" <+> ppRegVars vars <> semi
-
-ppRealDecl :: RealDecl -> Doc
-ppRealDecl (RealDecl vars)
-  = text "real" <+> ppIdents vars <> semi
+ppRegDecl (RegDecl reg_type mb_range vars)
+  = text (show reg_type) <+> mb ppRange mb_range <+> ppRegVars vars <> semi
 
 ppEventDecl :: EventDecl -> Doc
 ppEventDecl (EventDecl vars)
@@ -341,9 +326,6 @@ ppCaseItem (CaseDefault mb_stmt)
 ppBlockDecl :: BlockDecl -> Doc
 ppBlockDecl (ParamDeclBlock x)   = ppParamDecl x
 ppBlockDecl (RegDeclBlock x)     = ppRegDecl x
-ppBlockDecl (IntegerDeclBlock x) = ppIntegerDecl x
-ppBlockDecl (RealDeclBlock x)    = ppRealDecl x
-ppBlockDecl (TimeDeclBlock x)    = ppTimeDecl x
 ppBlockDecl (EventDeclBlock x)   = ppEventDecl x
 
 -- -----------------------------------------------------------------------------
