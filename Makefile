@@ -1,5 +1,5 @@
 .PHONY: all
-all: derive delete-trailing-whitespace
+all: derive
 
 .PHONY: derive
 # run derive on every file that has derived instances in it.
@@ -7,9 +7,10 @@ all: derive delete-trailing-whitespace
 .PHONY: derive
 derive:
 	@for f in `grep -l OPTIONS_DERIVE -r --include=*.hs .`; do \
-            echo derive $$f; derive $$f; done
+            echo derive $$f; derive $$f; \
+            sed -i -e 's/[ \t]*$$//g' $$f; done
 
 .PHONY: delete-trailing-whitespace
 delete-trailing-whitespace:
 	@for f in `/usr/bin/find . -iname \*.hs`; do \
-            gsed -i -e 's/[ \t]*$$//g' $$f; done
+            sed -i -e 's/[ \t]*$$//g' $$f; done
