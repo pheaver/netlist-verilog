@@ -26,6 +26,8 @@ module Language.Netlist.GenVerilog ( mk_module
                                    , mk_expr
                                    ) where
 
+import Numeric          ( showIntAtBase )
+
 import Language.Netlist.AST
 import qualified Language.Verilog.Syntax as V
 
@@ -144,11 +146,17 @@ mk_stmt (FunCallStmt x es)
 
 mk_expr :: Expr -> V.Expression
 mk_expr (ExprNum x)
-  = V.ExprNum x
+  = V.intExpr x
 mk_expr (ExprLit sz x)
-  = V.ExprLit sz x
+  = V.ExprNum (V.IntNum Nothing (Just (show sz)) (Just base) str)
+  where
+    str = showIntAtBase base_int (hexdigits !!) x ""
+    -- we show everything in hexadecimal, except 1-bit values
+    (base_int, base) = if sz == 1 then (2, V.BinBase) else (16, V.HexBase)
+    hexdigits = "0123456789abcdef"
+
 mk_expr (ExprBit x)
-  = V.ExprLit 1 (fromIntegral x)
+  = V.ExprNum (V.IntNum Nothing (Just "1") (Just V.BinBase) (show x))
 mk_expr (ExprString x)
   = V.ExprString x
 mk_expr (ExprVar x)
@@ -158,7 +166,7 @@ mk_expr (ExprIndex x e)
 mk_expr (ExprSlice x e1 e2)
   = V.ExprSlice (mk_ident x) (mk_expr e1) (mk_expr e2)
 mk_expr (ExprSliceOff x e i)
-  = f (mk_ident x) (mk_expr e) (V.ExprNum (abs (fromIntegral i)))
+  = f (mk_ident x) (mk_expr e) (V.intExpr (abs (fromIntegral i)))
   where
     f = if i < 0 then V.ExprSliceMinus else V.ExprSlicePlus
 mk_expr (ExprConcat exprs)

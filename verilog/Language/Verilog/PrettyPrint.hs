@@ -16,7 +16,6 @@
 module Language.Verilog.PrettyPrint where
 
 import Data.Maybe               ( fromMaybe )
-import Numeric                  ( showIntAtBase )
 import Text.PrettyPrint
 
 import Language.Verilog.Syntax
@@ -359,14 +358,7 @@ ppExpr = ppExpr' 0
 -- precedence-aware expression pretty printer - adds parens when it needs to
 ppExpr' :: Int -> Expression -> Doc
 ppExpr' _ (ExprNum x)
-  = integer x
-ppExpr' _ (ExprLit sz x)
-  = int sz <> tick <> char base_char <> text str
-  where
-    str = showIntAtBase base (hexdigits !!) x ""
-    -- we show everything in hexadecimal, except 1-bit values
-    (base, base_char) = if sz == 1 then (2, 'b') else (16, 'h')
-    hexdigits = "0123456789abcdef"
+  = text (show x)
 
 ppExpr' _ (ExprVar x)
   = ppIdent x

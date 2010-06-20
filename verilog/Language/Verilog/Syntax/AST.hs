@@ -51,10 +51,11 @@ module Language.Verilog.Syntax.AST
   ModuleInst(..), Parameter(..), Instance(..), Connections(..), NamedConnection(..),
 
   -- * Behavioral Statements
-  Statement(..), Assignment(..), CaseItem(..), BlockDecl(..),
+  Statement(..), Assignment(..), LValue, CaseItem(..), BlockDecl(..),
 
   -- * Expressions
-  Expression(..), ConstExpr, LValue, Base(..), UnaryOp(..), BinaryOp(..),
+  Expression(..), ConstExpr, Number(..), Base(..), Sign(..), intExpr,
+  UnaryOp(..), BinaryOp(..),
 
   -- * Miscellaneous
   Ident(..), ParamAssign(..), ExpandRange(..), Range(..), RegVar(..),
@@ -401,6 +402,11 @@ data Assignment
   = Assignment LValue Expression
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- A LValue is supposed to be limited to the following:
+--    ident | ident[expr] | ident[const_expr : const_expr ] | concatentation
+-- However, we don't make that restriction in our AST.
+type LValue = Expression
+
 -- | One case item in a @case@ statement.
 data CaseItem
   = CaseItem [Expression] (Maybe Statement)
@@ -415,15 +421,6 @@ data BlockDecl
   | TimeDeclBlock TimeDecl
   | EventDeclBlock EventDecl
   deriving (Eq, Ord, Show, Data, Typeable)
-
--- -----------------------------------------------------------------------------
--- 7. Expressions
-
-
--- A LValue is supposed to be limited to the following:
---    ident | ident[expr] | ident[const_expr : const_expr ] | concatentation
--- However, we don't make that restriction in our AST.
-type LValue = Expression
 
 -- -----------------------------------------------------------------------------
 -- Miscellaneous

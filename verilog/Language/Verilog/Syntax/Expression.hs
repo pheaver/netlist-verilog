@@ -20,10 +20,7 @@ module Language.Verilog.Syntax.Expression
     Ident(..),
 
     -- * Expressions
-    Expression(..), ConstExpr,
-
-    -- * Constants
-    Base(..),
+    Expression(..), ConstExpr, Number(..), Base(..), Sign(..), intExpr,
 
     -- * Unary Operators
     UnaryOp(..),
@@ -34,21 +31,17 @@ module Language.Verilog.Syntax.Expression
 
 import Data.Generics    ( Data, Typeable )
 import Data.Binary      ( Binary(..), putWord8, getWord8 )
+import Data.Maybe       ( fromMaybe )
 
 import Language.Verilog.Syntax.Ident
 
 --------------------------------------------------------------------------------
 -- expressions
 
--- | Expressions.  We do not yet support literals with @x@ or @z@ in them.
+-- | Expressions.  In numeric expressions, we leave the size and value as
+-- Strings instead of representing them as some integral type.
 data Expression
-  -- TODO: support X, x, z, and Z in numbers
-  -- TODO: support fractional numbers (e.g. 3.14)
-  -- TODO: support exponent numbers (e.g. 3e10)
-  -- | An unsized number
-  = ExprNum Integer
-  -- | A sized number
-  | ExprLit Int Integer
+  = ExprNum Number
   -- | A variable reference
   | ExprVar Ident
   -- | A literal string, in quotes.  Used for parameter values.
@@ -69,13 +62,52 @@ data Expression
   | ExprFunCall Ident [Expression]             -- ^ Function call, e.g. @f(a, b, c)@
   deriving (Eq, Ord, Show, Data, Typeable)
 
---------------------------------------------------------------------------------
--- constants
+data Sign
+  = Pos | Neg
+  deriving (Eq, Ord, Data, Typeable)
+
+instance Show Sign where
+  show Pos = "+"
+  show Neg = "-"
+
+intExpr :: Integral a => a -> Expression
+intExpr x = ExprNum (IntNum Nothing Nothing Nothing (show x))
+
+data Number
+  -- | An integral value: sign, size, and base.
+  = IntNum (Maybe Sign) (Maybe String) (Maybe Base) String
+  -- | A real number: sign, integral integral, fractional part, exponent sign,
+  -- and exponent value
+  | RealNum (Maybe Sign) String (Maybe String) (Maybe (Maybe Sign, String))
+  deriving (Eq, Ord, Data, Typeable)
+
+instance Show Number where
+  show (IntNum maybe_sign maybe_size maybe_base value)
+    = maybe "" show maybe_sign ++
+      fromMaybe "" maybe_size ++
+      maybe "" show maybe_base ++
+      value
+
+  show (RealNum maybe_sign int_part maybe_fract_part maybe_exponent)
+    = maybe "" show maybe_sign ++
+      int_part ++
+      maybe "" ("."++) maybe_fract_part ++
+      case maybe_exponent of
+        Just (mb_sign, e) -> "e" ++ (maybe "" show mb_sign) ++ e
+        Nothing           -> ""
 
 type ConstExpr = Expression
 
 data Base = BinBase | OctBase | DecBase | HexBase
-  deriving (Eq, Ord, Show, Data, Typeable)
+  deriving (Eq, Ord, Data, Typeable)
+
+instance Show Base where
+  show x = ['\'', case x of
+                    BinBase -> 'b'
+                    OctBase -> 'o'
+                    DecBase -> 'd'
+                    HexBase -> 'h'
+           ]
 
 --------------------------------------------------------------------------------
 -- operators
@@ -175,45 +207,42 @@ instance Binary Expression where
           = case x of
                 ExprNum x1 -> do putWord8 0
                                  put x1
-                ExprLit x1 x2 -> do putWord8 1
-                                    put x1
-                                    put x2
-                ExprVar x1 -> do putWord8 2
+                ExprVar x1 -> do putWord8 1
                                  put x1
-                ExprString x1 -> do putWord8 3
+                ExprString x1 -> do putWord8 2
                                     put x1
-                ExprIndex x1 x2 -> do putWord8 4
+                ExprIndex x1 x2 -> do putWord8 3
                                       put x1
                                       put x2
-                ExprSlice x1 x2 x3 -> do putWord8 5
+                ExprSlice x1 x2 x3 -> do putWord8 4
                                          put x1
                                          put x2
                                          put x3
-                ExprSlicePlus x1 x2 x3 -> do putWord8 6
+                ExprSlicePlus x1 x2 x3 -> do putWord8 5
                                              put x1
                                              put x2
                                              put x3
-                ExprSliceMinus x1 x2 x3 -> do putWord8 7
+                ExprSliceMinus x1 x2 x3 -> do putWord8 6
                                               put x1
                                               put x2
                                               put x3
-                ExprConcat x1 -> do putWord8 8
+                ExprConcat x1 -> do putWord8 7
                                     put x1
-                ExprMultiConcat x1 x2 -> do putWord8 9
+                ExprMultiConcat x1 x2 -> do putWord8 8
                                             put x1
                                             put x2
-                ExprUnary x1 x2 -> do putWord8 10
+                ExprUnary x1 x2 -> do putWord8 9
                                       put x1
                                       put x2
-                ExprBinary x1 x2 x3 -> do putWord8 11
+                ExprBinary x1 x2 x3 -> do putWord8 10
                                           put x1
                                           put x2
                                           put x3
-                ExprCond x1 x2 x3 -> do putWord8 12
+                ExprCond x1 x2 x3 -> do putWord8 11
                                         put x1
                                         put x2
                                         put x3
-                ExprFunCall x1 x2 -> do putWord8 13
+                ExprFunCall x1 x2 -> do putWord8 12
                                         put x1
                                         put x2
         get
@@ -222,47 +251,86 @@ instance Binary Expression where
                    0 -> do x1 <- get
                            return (ExprNum x1)
                    1 -> do x1 <- get
-                           x2 <- get
-                           return (ExprLit x1 x2)
-                   2 -> do x1 <- get
                            return (ExprVar x1)
-                   3 -> do x1 <- get
+                   2 -> do x1 <- get
                            return (ExprString x1)
-                   4 -> do x1 <- get
+                   3 -> do x1 <- get
                            x2 <- get
                            return (ExprIndex x1 x2)
-                   5 -> do x1 <- get
+                   4 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprSlice x1 x2 x3)
-                   6 -> do x1 <- get
+                   5 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprSlicePlus x1 x2 x3)
-                   7 -> do x1 <- get
+                   6 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprSliceMinus x1 x2 x3)
-                   8 -> do x1 <- get
+                   7 -> do x1 <- get
                            return (ExprConcat x1)
-                   9 -> do x1 <- get
+                   8 -> do x1 <- get
                            x2 <- get
                            return (ExprMultiConcat x1 x2)
+                   9 -> do x1 <- get
+                           x2 <- get
+                           return (ExprUnary x1 x2)
                    10 -> do x1 <- get
-                            x2 <- get
-                            return (ExprUnary x1 x2)
-                   11 -> do x1 <- get
                             x2 <- get
                             x3 <- get
                             return (ExprBinary x1 x2 x3)
-                   12 -> do x1 <- get
+                   11 -> do x1 <- get
                             x2 <- get
                             x3 <- get
                             return (ExprCond x1 x2 x3)
-                   13 -> do x1 <- get
+                   12 -> do x1 <- get
                             x2 <- get
                             return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expression"
+
+
+instance Binary Sign where
+        put x
+          = case x of
+                Pos -> putWord8 0
+                Neg -> putWord8 1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Pos
+                   1 -> return Neg
+                   _ -> error "Corrupted binary data for Sign"
+
+
+instance Binary Number where
+        put x
+          = case x of
+                IntNum x1 x2 x3 x4 -> do putWord8 0
+                                         put x1
+                                         put x2
+                                         put x3
+                                         put x4
+                RealNum x1 x2 x3 x4 -> do putWord8 1
+                                          put x1
+                                          put x2
+                                          put x3
+                                          put x4
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           x2 <- get
+                           x3 <- get
+                           x4 <- get
+                           return (IntNum x1 x2 x3 x4)
+                   1 -> do x1 <- get
+                           x2 <- get
+                           x3 <- get
+                           x4 <- get
+                           return (RealNum x1 x2 x3 x4)
+                   _ -> error "Corrupted binary data for Number"
 
 
 instance Binary Base where
