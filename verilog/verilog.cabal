@@ -21,7 +21,7 @@ flag split-base
 Library
   ghc-options:          -Wall
 
-  exposed-modules:      Language.Verilog.AST,
+  exposed-modules:      Language.Verilog.Syntax,
                         Language.Verilog.PrettyPrint,
                         Language.Verilog
 

@@ -27,7 +27,7 @@ module Language.Netlist.GenVerilog ( mk_module
                                    ) where
 
 import Language.Netlist.AST
-import qualified Language.Verilog.AST as V
+import qualified Language.Verilog.Syntax as V
 
 -- -----------------------------------------------------------------------------
 

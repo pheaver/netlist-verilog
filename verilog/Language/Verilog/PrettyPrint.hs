@@ -19,7 +19,7 @@ import Data.Maybe               ( fromMaybe )
 import Numeric                  ( showIntAtBase )
 import Text.PrettyPrint
 
-import Language.Verilog.AST
+import Language.Verilog.Syntax
 
 -- -----------------------------------------------------------------------------
 -- some utilities, which should go in a common module elsewhere
