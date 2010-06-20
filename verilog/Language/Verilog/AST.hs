@@ -102,7 +102,7 @@ data Item
   -- TODO: GateDecl
   -- TODO: UDPInst
   | ModuleInstItem ModuleInst
-  -- TODO: ParamOverride
+  | ParamOverrideItem [ParamAssign]
   | AssignItem (Maybe DriveStrength) (Maybe Delay) [Assignment]
   -- TODO: SpecifyBlock
   | InitialItem Statement
@@ -532,13 +532,15 @@ instance Binary Item where
                                        put x1
                 ModuleInstItem x1 -> do putWord8 10
                                         put x1
-                AssignItem x1 x2 x3 -> do putWord8 11
+                ParamOverrideItem x1 -> do putWord8 11
+                                           put x1
+                AssignItem x1 x2 x3 -> do putWord8 12
                                           put x1
                                           put x2
                                           put x3
-                InitialItem x1 -> do putWord8 12
+                InitialItem x1 -> do putWord8 13
                                      put x1
-                AlwaysItem x1 -> do putWord8 13
+                AlwaysItem x1 -> do putWord8 14
                                     put x1
         get
           = do i <- getWord8
@@ -566,12 +568,14 @@ instance Binary Item where
                    10 -> do x1 <- get
                             return (ModuleInstItem x1)
                    11 -> do x1 <- get
+                            return (ParamOverrideItem x1)
+                   12 -> do x1 <- get
                             x2 <- get
                             x3 <- get
                             return (AssignItem x1 x2 x3)
-                   12 -> do x1 <- get
-                            return (InitialItem x1)
                    13 -> do x1 <- get
+                            return (InitialItem x1)
+                   14 -> do x1 <- get
                             return (AlwaysItem x1)
                    _ -> error "Corrupted binary data for Item"
 

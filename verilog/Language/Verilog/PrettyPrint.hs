@@ -60,6 +60,8 @@ ppItem (IntegerDeclItem x) = ppIntegerDecl x
 ppItem (RealDeclItem x)    = ppRealDecl x
 ppItem (EventDeclItem x)   = ppEventDecl x
 ppItem (ModuleInstItem x)  = ppModuleInst x
+ppItem (ParamOverrideItem xs)
+  = text "defparam" <+> ppParamAssigns xs <> semi
 ppItem (AssignItem mb_strength mb_delay assignments)
   = text "assign" <+>
     mb ppDriveStrength mb_strength <+>
@@ -79,7 +81,7 @@ ppItem (AlwaysItem stmt)
 
 ppParamDecl :: ParamDecl -> Doc
 ppParamDecl (ParamDecl paramAssigns)
-  = text "parameter" <+> commasep (map ppParamAssign paramAssigns) <> semi
+  = text "parameter" <+> ppParamAssigns paramAssigns <> semi
 
 ppInputDecl :: InputDecl -> Doc
 ppInputDecl (InputDecl mb_range vars)
@@ -350,6 +352,10 @@ binary_op_table
 
 -- -----------------------------------------------------------------------------
 -- Miscellaneous
+
+ppParamAssigns :: [ParamAssign] -> Doc
+ppParamAssigns paramAssigns
+  = commasep (map ppParamAssign paramAssigns)
 
 ppParamAssign :: ParamAssign -> Doc
 ppParamAssign (ParamAssign ident expr)
