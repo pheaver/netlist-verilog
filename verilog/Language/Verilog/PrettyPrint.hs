@@ -180,6 +180,17 @@ ppRegDecl :: RegDecl -> Doc
 ppRegDecl (RegDecl reg_type mb_range vars)
   = text (show reg_type) <+> mb ppRange mb_range <+> ppRegVars vars <> semi
 
+ppRegVar :: RegVar -> Doc
+ppRegVar (RegVar x Nothing)
+  = ppIdent x
+ppRegVar (RegVar x (Just e))
+  = ppIdent x <+> equals <+> ppExpr e
+ppRegVar (MemVar x r)
+  = ppIdent x <+> ppRange r
+
+ppRegVars :: [RegVar] -> Doc
+ppRegVars = commasep . map ppRegVar
+
 ppEventDecl :: EventDecl -> Doc
 ppEventDecl (EventDecl vars)
   = text "event" <+> ppIdents vars <> semi
@@ -463,13 +474,6 @@ ppIdent (Ident x) = text x
 
 ppIdents :: [Ident] -> Doc
 ppIdents = commasep . map ppIdent
-
-ppRegVar :: RegVar -> Doc
-ppRegVar (RegVar x r)
-  = ppIdent x <> mb ppRange r
-
-ppRegVars :: [RegVar] -> Doc
-ppRegVars = commasep . map ppRegVar
 
 ppDriveStrength :: DriveStrength -> Doc
 ppDriveStrength (Strength01 s0 s1)

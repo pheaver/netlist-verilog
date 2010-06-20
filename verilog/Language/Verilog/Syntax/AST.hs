@@ -264,10 +264,10 @@ instance Show RegType where
   show RegTime    = "time"
   show RegReal    = "real"
 
--- TODO support assigning initial value to registers
 -- TODO support multi-dimensional array
 data RegVar
-  = RegVar Ident (Maybe Range)
+  = RegVar Ident (Maybe Expression) -- ^ with optional initial value
+  | MemVar Ident Range              -- ^ array
   deriving (Eq, Ord, Show, Data, Typeable)
 
 newtype EventDecl

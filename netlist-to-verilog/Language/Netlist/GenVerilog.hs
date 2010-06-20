@@ -65,7 +65,10 @@ mk_decl (NetAssign x expr)
 
 mk_decl (MemDecl x mb_range1 mb_range2)
   = [V.RegDeclItem (V.RegDecl V.RegReg (fmap mk_range mb_range2)
-                    [V.RegVar (mk_ident x) (fmap mk_range mb_range1)])]
+                    [case mb_range1 of
+                       Nothing -> V.RegVar (mk_ident x) Nothing
+                       Just r  -> V.MemVar (mk_ident x) (mk_range r)
+                    ])]
 
 mk_decl (InstDecl mod_name inst_name params inputs outputs)
   = [V.ModuleInstItem (V.ModuleInst (mk_ident mod_name) v_params [inst])]
