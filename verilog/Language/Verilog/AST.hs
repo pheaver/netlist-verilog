@@ -379,9 +379,9 @@ data Statement
   | ParBlock (Maybe Ident) [BlockDecl] [Statement]
   -- | call a task, with optional arguments like in a function call.
   | TaskStmt Ident (Maybe [Expression])
-  -- TODO: <task_enable>
-  -- TODO: <system_task_enable>
-  -- TODO: DisableStmt Ident
+  | TaskEnableStmt Ident [Expression]
+  -- TODO SystemTaskEnableStmt Ident [Expression]
+  | DisableStmt Ident
   -- | @assign@ statement (like continuous assignment).
   | AssignStmt Assignment
   -- | @deassign@ statement.
@@ -1036,13 +1036,18 @@ instance Binary Statement where
                 TaskStmt x1 x2 -> do putWord8 12
                                      put x1
                                      put x2
-                AssignStmt x1 -> do putWord8 13
+                TaskEnableStmt x1 x2 -> do putWord8 13
+                                           put x1
+                                           put x2
+                DisableStmt x1 -> do putWord8 14
+                                     put x1
+                AssignStmt x1 -> do putWord8 15
                                     put x1
-                DeAssignStmt x1 -> do putWord8 14
+                DeAssignStmt x1 -> do putWord8 16
                                       put x1
-                ForceStmt x1 -> do putWord8 15
+                ForceStmt x1 -> do putWord8 17
                                    put x1
-                ReleaseStmt x1 -> do putWord8 16
+                ReleaseStmt x1 -> do putWord8 18
                                      put x1
         get
           = do i <- getWord8
@@ -1093,12 +1098,17 @@ instance Binary Statement where
                             x2 <- get
                             return (TaskStmt x1 x2)
                    13 -> do x1 <- get
-                            return (AssignStmt x1)
+                            x2 <- get
+                            return (TaskEnableStmt x1 x2)
                    14 -> do x1 <- get
-                            return (DeAssignStmt x1)
+                            return (DisableStmt x1)
                    15 -> do x1 <- get
-                            return (ForceStmt x1)
+                            return (AssignStmt x1)
                    16 -> do x1 <- get
+                            return (DeAssignStmt x1)
+                   17 -> do x1 <- get
+                            return (ForceStmt x1)
+                   18 -> do x1 <- get
                             return (ReleaseStmt x1)
                    _ -> error "Corrupted binary data for Statement"
 

@@ -303,6 +303,16 @@ ppStatement (ParBlock mb_name decls stmts)
               Nothing   -> empty
 ppStatement (TaskStmt x mb_es)
   = char '$' <> ppIdent x <> maybe empty (parens . commasep . map ppExpr) mb_es <> semi
+ppStatement (TaskEnableStmt name exprs)
+  | null exprs = ppIdent name <> semi
+  | otherwise  = ppIdent name <+> parens (commasep (map ppExpr exprs))
+{-
+ppStatement (SystemTaskEnableStmt name exprs)
+  | null exprs = char '$' <> ppIdent name <> semi
+  | otherwise  = char '$' <> ppIdent name <+> parens (commasep (map ppExpr exprs))
+-}
+ppStatement (DisableStmt name)
+  = text "disable" <+> ppIdent name <> semi
 ppStatement (AssignStmt assignment)
   = text "assign" <+> ppAssignment assignment <> semi
 ppStatement (DeAssignStmt x)
