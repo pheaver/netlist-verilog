@@ -41,6 +41,7 @@ tick = char '\''
 
 ppDescription :: Description -> Doc
 ppDescription (ModuleDescription m) = ppModule m
+ppDescription (UDPDescription udp)  = ppUDP udp
 
 ppModule :: Module -> Doc
 ppModule (Module name ports body)
@@ -75,6 +76,77 @@ ppItem (AlwaysItem (DelayOrEventControlStmt ctrl stmt))
   = fsep [ text "always", ppDelayOrEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
 ppItem (AlwaysItem stmt)
   = fsep [ text "always", nest 2 (ppStatement stmt) ]
+
+ppUDP :: UDP -> Doc
+ppUDP (UDP name output_var input_vars decls maybe_initial table_definition)
+  = text "primitive" <+> ppIdent name <+>
+    parens (ppIdents (output_var : input_vars)) <> semi $$
+    nest 2 ( vcat (map ppUDPDecl decls) $$
+             maybe empty ppUDPInitialStatement maybe_initial $$
+             ppTableDefinition table_definition
+           ) $$
+    text "endprimitive"
+
+ppUDPDecl :: UDPDecl -> Doc
+ppUDPDecl (UDPOutputDecl d) = ppOutputDecl d
+ppUDPDecl (UDPInputDecl d)  = ppInputDecl d
+ppUDPDecl (UDPRegDecl d)    = ppRegDecl d
+
+ppUDPInitialStatement :: UDPInitialStatement -> Doc
+ppUDPInitialStatement (UDPInitialStatement name value)
+  = text "initial" <+> ppIdent name <+> equals <+> ppExpr value <> semi
+
+ppTableDefinition :: TableDefinition -> Doc
+ppTableDefinition table
+  = text "table" $$
+    nest 2 (vcat xs) $$
+    text "endtable"
+  where
+    xs = case table of
+           CombinationalTable entries -> map ppCombinationalEntry entries
+           SequentialTable entries    -> map ppSequentialEntry entries
+
+ppCombinationalEntry :: CombinationalEntry -> Doc
+ppCombinationalEntry (CombinationalEntry inputs output)
+  = ppLevelSymbols inputs <+> colon <+> ppOutputSymbol output <> semi
+
+ppSequentialEntry :: SequentialEntry -> Doc
+ppSequentialEntry (SequentialEntry inputs state next_state)
+  = ppInputList inputs <+> colon <+>
+    ppLevelSymbol state <+> colon <+> ppNextState next_state
+
+ppLevelSymbols :: [LevelSymbol] -> Doc
+ppLevelSymbols = hsep . map ppLevelSymbol
+
+ppInputList :: InputList -> Doc
+ppInputList (LevelInputList xs)  = ppLevelSymbols xs
+ppInputList (EdgeInputList edge) = ppEdge edge
+
+ppEdge :: Edge -> Doc
+ppEdge (EdgeLevels x y)
+  = parens (ppLevelSymbol x <+> ppLevelSymbol y)
+ppEdge (EdgeSymbol x)
+  = ppEdgeSymbol x
+
+ppOutputSymbol :: OutputSymbol -> Doc
+ppOutputSymbol x
+  | validOutputSymbol x = char x
+  | otherwise           = error ("ppOutputSymbol: invalid character: " ++ [x])
+
+ppLevelSymbol :: LevelSymbol -> Doc
+ppLevelSymbol x
+  | validLevelSymbol x = char x
+  | otherwise          = error ("ppLevelSymbol: invalid character: " ++ [x])
+
+ppNextState :: NextState -> Doc
+ppNextState x
+  | validNextState x = char x
+  | otherwise        = error ("ppNextState: invalid character: " ++ [x])
+
+ppEdgeSymbol :: EdgeSymbol -> Doc
+ppEdgeSymbol x
+  | validEdgeSymbol x = char x
+  | otherwise         = error ("ppEdgeSymbol: invalid character: " ++ [x])
 
 -- -----------------------------------------------------------------------------
 -- 2. Declarations

@@ -32,6 +32,14 @@ module Language.Verilog.AST
   -- * The top-level types
   Verilog(..), Module(..), Description(..),
 
+  -- * User-defined primitives
+  UDP(..), UDPDecl(..), UDPInitialStatement(..),
+  TableDefinition(..), CombinationalEntry(..), SequentialEntry(..),
+  LevelSymbol, levelSymbols, validLevelSymbol,
+  OutputSymbol, outputSymbols, validOutputSymbol,
+  NextState, nextStates, validNextState,
+  InputList(..), Edge(..), EdgeSymbol, edgeSymbols, validEdgeSymbol,
+
   -- * Items and Declarations
   Item(..), ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
   NetDecl(..), RegDecl(..), TimeDecl(..), IntegerDecl(..), RealDecl(..), EventDecl(..),
@@ -68,14 +76,8 @@ newtype Verilog = Verilog [Description]
 -- supporting module.
 data Description
   = ModuleDescription Module
+  | UDPDescription UDP
   deriving (Eq, Ord, Show, Data, Typeable)
-
-{-
-data Description
-  = ModuleDescription Module
-  -- TODO: | UDP -- User-defined primitive
-  deriving (Eq, Ord, Show, Data, Typeable)
--}
 
 -- | A top-level module has the module name, the list of ports (both input and
 -- output), and the body of the module (a list of declarations).  In the spec,
@@ -110,6 +112,111 @@ data Item
   -- TODO: Task
   -- TODO: Function
   deriving (Eq, Ord, Show, Data, Typeable)
+
+-- --------------------
+
+-- | User-defined primitive (UDP)
+data UDP
+  = UDP Ident     -- Name of UDP
+        Ident     -- Name of output variable
+        [Ident]   -- Name of input variables
+        [UDPDecl] -- input/output/reg declarations
+        (Maybe UDPInitialStatement)
+        TableDefinition
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+-- | A UDP can have output, input, and reg declarations.
+data UDPDecl
+  = UDPOutputDecl OutputDecl
+  | UDPInputDecl InputDecl
+  | UDPRegDecl RegDecl
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+-- | A UDP initial statement defines the initial value of a UDP.
+data UDPInitialStatement
+  = UDPInitialStatement Ident Expression
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+-- According to the spec, the initial value of a UDP can be any of the
+-- following, but we don't make that restriction in the AST.
+{-
+<init_val>
+::= 1'b0
+||= 1'b1
+||= 1'bx
+||= 1'bX
+||= 1'B0
+||= 1'B1
+||= 1'Bx
+||= 1'BX
+||= 1
+||= 0
+-}
+
+-- | A UDP's definition is a truth table.
+data TableDefinition
+  = CombinationalTable [CombinationalEntry]
+  | SequentialTable [SequentialEntry]
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+-- | An entry in a combinational table.
+data CombinationalEntry
+  = CombinationalEntry [LevelSymbol] OutputSymbol
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+type LevelSymbol = Char
+
+-- | A level symbol is one of the following characters:
+-- 0   1   x   X   ?   b   B
+levelSymbols :: [LevelSymbol]
+levelSymbols = "01xX?bB"
+
+validLevelSymbol :: Char -> Bool
+validLevelSymbol = flip elem levelSymbols
+
+type OutputSymbol = Char
+
+-- | An output symbol is one of the following characters:
+-- 0   1   x   X   ?   b   B
+outputSymbols :: [OutputSymbol]
+outputSymbols = "01xX"
+
+validOutputSymbol :: Char -> Bool
+validOutputSymbol = flip elem outputSymbols
+
+data SequentialEntry
+  = SequentialEntry InputList LevelSymbol NextState
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+data InputList
+  = LevelInputList [LevelSymbol]
+  | EdgeInputList {-[LevelSymbol]-} Edge {-[LevelSymbol]-}
+  -- the spec says
+  --    <edge_input_list> ::= <LEVEL_SYMBOL>* <edge> <LEVEL_SYMBOL>*
+  -- but I haven't figured out what the LEVEL_SYMBOLs are for yet,
+  -- so I left them out.
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+data Edge
+  = EdgeLevels LevelSymbol LevelSymbol
+  | EdgeSymbol EdgeSymbol
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+type EdgeSymbol = Char
+
+edgeSymbols :: [Char]
+edgeSymbols = "rRfFpPnN*"
+
+validEdgeSymbol :: Char -> Bool
+validEdgeSymbol = flip elem edgeSymbols
+
+type NextState = Char
+
+nextStates :: [NextState]
+nextStates = outputSymbols ++ "-"
+
+validNextState :: NextState -> Bool
+validNextState = flip elem nextStates
 
 -- -----------------------------------------------------------------------------
 -- 2. Declarations
@@ -489,10 +596,20 @@ instance Binary Verilog where
 
 
 instance Binary Description where
-        put (ModuleDescription x1) = put x1
+        put x
+          = case x of
+                ModuleDescription x1 -> do putWord8 0
+                                           put x1
+                UDPDescription x1 -> do putWord8 1
+                                        put x1
         get
-          = do x1 <- get
-               return (ModuleDescription x1)
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (ModuleDescription x1)
+                   1 -> do x1 <- get
+                           return (UDPDescription x1)
+                   _ -> error "Corrupted binary data for Description"
 
 
 instance Binary Module where
@@ -578,6 +695,130 @@ instance Binary Item where
                    14 -> do x1 <- get
                             return (AlwaysItem x1)
                    _ -> error "Corrupted binary data for Item"
+
+
+instance Binary UDP where
+        put (UDP x1 x2 x3 x4 x5 x6)
+          = do put x1
+               put x2
+               put x3
+               put x4
+               put x5
+               put x6
+        get
+          = do x1 <- get
+               x2 <- get
+               x3 <- get
+               x4 <- get
+               x5 <- get
+               x6 <- get
+               return (UDP x1 x2 x3 x4 x5 x6)
+
+
+instance Binary UDPDecl where
+        put x
+          = case x of
+                UDPOutputDecl x1 -> do putWord8 0
+                                       put x1
+                UDPInputDecl x1 -> do putWord8 1
+                                      put x1
+                UDPRegDecl x1 -> do putWord8 2
+                                    put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (UDPOutputDecl x1)
+                   1 -> do x1 <- get
+                           return (UDPInputDecl x1)
+                   2 -> do x1 <- get
+                           return (UDPRegDecl x1)
+                   _ -> error "Corrupted binary data for UDPDecl"
+
+
+instance Binary UDPInitialStatement where
+        put (UDPInitialStatement x1 x2)
+          = do put x1
+               put x2
+        get
+          = do x1 <- get
+               x2 <- get
+               return (UDPInitialStatement x1 x2)
+
+
+instance Binary TableDefinition where
+        put x
+          = case x of
+                CombinationalTable x1 -> do putWord8 0
+                                            put x1
+                SequentialTable x1 -> do putWord8 1
+                                         put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (CombinationalTable x1)
+                   1 -> do x1 <- get
+                           return (SequentialTable x1)
+                   _ -> error "Corrupted binary data for TableDefinition"
+
+
+instance Binary CombinationalEntry where
+        put (CombinationalEntry x1 x2)
+          = do put x1
+               put x2
+        get
+          = do x1 <- get
+               x2 <- get
+               return (CombinationalEntry x1 x2)
+
+
+instance Binary SequentialEntry where
+        put (SequentialEntry x1 x2 x3)
+          = do put x1
+               put x2
+               put x3
+        get
+          = do x1 <- get
+               x2 <- get
+               x3 <- get
+               return (SequentialEntry x1 x2 x3)
+
+
+instance Binary InputList where
+        put x
+          = case x of
+                LevelInputList x1 -> do putWord8 0
+                                        put x1
+                EdgeInputList x1 -> do putWord8 1
+                                       put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (LevelInputList x1)
+                   1 -> do x1 <- get
+                           return (EdgeInputList x1)
+                   _ -> error "Corrupted binary data for InputList"
+
+
+instance Binary Edge where
+        put x
+          = case x of
+                EdgeLevels x1 x2 -> do putWord8 0
+                                       put x1
+                                       put x2
+                EdgeSymbol x1 -> do putWord8 1
+                                    put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           x2 <- get
+                           return (EdgeLevels x1 x2)
+                   1 -> do x1 <- get
+                           return (EdgeSymbol x1)
+                   _ -> error "Corrupted binary data for Edge"
 
 
 instance Binary ParamDecl where
