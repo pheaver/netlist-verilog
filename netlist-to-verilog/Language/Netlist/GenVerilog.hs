@@ -87,10 +87,10 @@ mk_decl (ProcessDecl [])
   = []
 
 mk_decl (ProcessDecl xs)
-  = [V.AlwaysItem (V.DelayOrEventControlStmt e (Just s))]
+  = [V.AlwaysItem (V.EventControlStmt e (Just s))]
   where
     s = mk_process_stmt xs
-    e = V.EventControl (mk_trigger (map fst xs))
+    e = V.EventControlExpr $ mk_trigger (map fst xs)
 
 mk_range :: Range -> V.Range
 mk_range (Range e1 e2)

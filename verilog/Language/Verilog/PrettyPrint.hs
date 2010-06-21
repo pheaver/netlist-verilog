@@ -64,12 +64,12 @@ ppItem (AssignItem mb_strength mb_delay assignments)
     mb ppDriveStrength mb_strength <+>
     mb ppDelay mb_delay <+>
     commasep (map ppAssignment assignments) <> semi
-ppItem (InitialItem (DelayOrEventControlStmt ctrl stmt))
-  = fsep [ text "initial", ppDelayOrEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
+ppItem (InitialItem (EventControlStmt ctrl stmt))
+  = fsep [ text "initial", ppEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
 ppItem (InitialItem stmt)
   = fsep [ text "initial", nest 2 (ppStatement stmt) ]
-ppItem (AlwaysItem (DelayOrEventControlStmt ctrl stmt))
-  = fsep [ text "always", ppDelayOrEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
+ppItem (AlwaysItem (EventControlStmt ctrl stmt))
+  = fsep [ text "always", ppEventControl ctrl, nest 2 (maybe semi ppStatement stmt) ]
 ppItem (AlwaysItem stmt)
   = fsep [ text "always", nest 2 (ppStatement stmt) ]
 
@@ -239,9 +239,9 @@ ppNamedConnection (NamedConnection x expr)
 
 ppStatement :: Statement -> Doc
 ppStatement (BlockingAssignment x ctrl expr)
-  = ppLValue x <+> equals <+> mb ppDelayOrEventControl ctrl <+> ppExpr expr <> semi
+  = ppLValue x <+> equals <+> mb ppAssignmentControl ctrl <+> ppExpr expr <> semi
 ppStatement (NonBlockingAssignment x ctrl expr)
-  = ppLValue x <+> text "<=" <+> mb ppDelayOrEventControl ctrl <+> ppExpr expr <> semi
+  = ppLValue x <+> text "<=" <+> mb ppAssignmentControl ctrl <+> ppExpr expr <> semi
 
 -- we have to add a begin-end pair in order to avoid ambiguity, otherwise in the
 -- concrete syntax the else-branch (if2) will be associated with if1 instead of
@@ -280,10 +280,12 @@ ppStatement (ForStmt init_assign expr_cond loop_assign stmt)
     x = text "for" <+> parens (ppAssignment init_assign <> semi <+>
                                ppExpr expr_cond <> semi <+>
                                ppAssignment loop_assign)
-ppStatement (DelayOrEventControlStmt ctrl mb_stmt)
+ppStatement (DelayStmt delay mb_stmt)
+  = ppDelay delay <+> mb ppStatement mb_stmt <> semi
+ppStatement (EventControlStmt ctrl mb_stmt)
   = case mb_stmt of
-      Just stmt -> ppDelayOrEventControl ctrl `nestStmt` ppStatement stmt
-      Nothing   -> ppDelayOrEventControl ctrl <> semi
+      Just stmt -> ppEventControl ctrl `nestStmt` ppStatement stmt
+      Nothing   -> ppEventControl ctrl <> semi
 ppStatement (WaitStmt expr stmt)
   = (text "wait" <+> parens (ppExpr expr)) `nestStmt` maybe semi ppStatement stmt
 ppStatement (SeqBlock mb_name decls stmts)
@@ -459,19 +461,24 @@ ppRange :: Range -> Doc
 ppRange (Range e1 e2)
   = brackets (ppExpr e1 <> colon <> ppExpr e2)
 
-ppDelayOrEventControl :: DelayOrEventControl -> Doc
-ppDelayOrEventControl (DelayControl x)
-  = ppDelayControl x
-ppDelayOrEventControl (EventControl x)
-  = ppEventControl x
-ppDelayOrEventControl (RepeatControl expr x)
-  = text "repeat" <+> parens (ppExpr expr) <+> ppEventControl x
+ppAssignmentControl :: AssignmentControl -> Doc
+ppAssignmentControl (DelayControl delay)
+  = ppDelay delay
+ppAssignmentControl (EventControl ctrl)
+  = ppEventControl ctrl
+ppAssignmentControl (RepeatControl e ctrl)
+  = text "repear" <> parens (ppExpr e) <+> ppEventControl ctrl
 
 ppDelayControl :: DelayControl -> Doc
 ppDelayControl = ppDelay
 
 ppEventControl :: EventControl -> Doc
-ppEventControl x = char '@' <> parens (ppEventExpr x)
+ppEventControl ctrl
+  = char '@' <>
+    case ctrl of
+      EventControlIdent x  -> ppIdent x
+      EventControlExpr e   -> parens (ppEventExpr e)
+      EventControlWildCard -> char '*'
 
 ppDelay :: Delay -> Doc
 ppDelay x = char '#' <> ppExpr x

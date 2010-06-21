@@ -59,7 +59,7 @@ module Language.Verilog.Syntax.AST
 
   -- * Miscellaneous
   Ident(..), ParamAssign(..), ExpandRange(..), Range(..), RegVar(..),
-  DelayOrEventControl(..), DelayControl, EventControl, Delay,
+  AssignmentControl(..), DelayControl, EventControl(..), Delay,
   EventExpr(..), ScalarEventExpr,
   ChargeStrength, DriveStrength(..),
   Strength0(..), Strength1(..), NetType(..)
@@ -352,9 +352,9 @@ data NamedConnection
 -- | Behavioral statements.
 data Statement
   -- | blocking assignment, e.g. @x \= y@
-  = BlockingAssignment LValue (Maybe DelayOrEventControl) Expression
+  = BlockingAssignment LValue (Maybe AssignmentControl) Expression
   -- | non-blocking assignment, e.g. @x \<= y@
-  | NonBlockingAssignment LValue (Maybe DelayOrEventControl) Expression
+  | NonBlockingAssignment LValue (Maybe AssignmentControl) Expression
   -- | @if@ statement.  Both branches are optional.
   | IfStmt Expression (Maybe Statement) (Maybe Statement)
   -- | @case@ statement.
@@ -369,8 +369,10 @@ data Statement
   | WhileStmt Expression Statement
   -- | @for@ statement, e.g. @for (i = 0; i < 10; i = i + 1) $display(\"%d\", i);@
   | ForStmt Assignment Expression Assignment Statement
-  -- | delay or event control statement, e.g. @\@(posedge clk) x <= 10;@, or @#10 x <= 10;@
-  | DelayOrEventControlStmt DelayOrEventControl (Maybe Statement)
+  -- | @delay@ statement, e.g. @\#10 x = 1;@
+  | DelayStmt Delay (Maybe Statement)
+  -- | Control statement triggered by an event, e.g. @\@(posedge clk) x <= 10;@
+  | EventControlStmt EventControl (Maybe Statement)
   -- | @wait@ statement, e.g. @wait (x) y <= 0;@
   | WaitStmt Expression (Maybe Statement)
   -- | a sequence of statements between @begin@ and @end@ keywords.
@@ -433,14 +435,21 @@ data Range
   = Range ConstExpr ConstExpr
   deriving (Eq, Ord, Show, Data, Typeable)
 
-data DelayOrEventControl
-  = DelayControl DelayControl
+-- | The optional timing control for a procedural assignment statement
+-- (i.e. blocking and nonblocking assignments)
+data AssignmentControl
+  = DelayControl Delay
   | EventControl EventControl
   | RepeatControl Expression EventControl
   deriving (Eq, Ord, Show, Data, Typeable)
 
+data EventControl
+  = EventControlIdent Ident     -- ^ @\@identifier@
+  | EventControlExpr EventExpr  -- ^ @\@(event_expression)@
+  | EventControlWildCard        -- ^ @\@\*@
+  deriving (Eq, Ord, Show, Data, Typeable)
+
 type DelayControl = Delay
-type EventControl = EventExpr
 
 -- the actual syntax for <delay> is:
 -- <number> | <identifier> | <mintypmax_expression>,
@@ -955,35 +964,38 @@ instance Binary Statement where
                                           put x2
                                           put x3
                                           put x4
-                DelayOrEventControlStmt x1 x2 -> do putWord8 8
-                                                    put x1
-                                                    put x2
-                WaitStmt x1 x2 -> do putWord8 9
+                DelayStmt x1 x2 -> do putWord8 8
+                                      put x1
+                                      put x2
+                EventControlStmt x1 x2 -> do putWord8 9
+                                             put x1
+                                             put x2
+                WaitStmt x1 x2 -> do putWord8 10
                                      put x1
                                      put x2
-                SeqBlock x1 x2 x3 -> do putWord8 10
+                SeqBlock x1 x2 x3 -> do putWord8 11
                                         put x1
                                         put x2
                                         put x3
-                ParBlock x1 x2 x3 -> do putWord8 11
+                ParBlock x1 x2 x3 -> do putWord8 12
                                         put x1
                                         put x2
                                         put x3
-                TaskStmt x1 x2 -> do putWord8 12
+                TaskStmt x1 x2 -> do putWord8 13
                                      put x1
                                      put x2
-                TaskEnableStmt x1 x2 -> do putWord8 13
+                TaskEnableStmt x1 x2 -> do putWord8 14
                                            put x1
                                            put x2
-                DisableStmt x1 -> do putWord8 14
+                DisableStmt x1 -> do putWord8 15
                                      put x1
-                AssignStmt x1 -> do putWord8 15
+                AssignStmt x1 -> do putWord8 16
                                     put x1
-                DeAssignStmt x1 -> do putWord8 16
+                DeAssignStmt x1 -> do putWord8 17
                                       put x1
-                ForceStmt x1 -> do putWord8 17
+                ForceStmt x1 -> do putWord8 18
                                    put x1
-                ReleaseStmt x1 -> do putWord8 18
+                ReleaseStmt x1 -> do putWord8 19
                                      put x1
         get
           = do i <- getWord8
@@ -1018,33 +1030,36 @@ instance Binary Statement where
                            return (ForStmt x1 x2 x3 x4)
                    8 -> do x1 <- get
                            x2 <- get
-                           return (DelayOrEventControlStmt x1 x2)
+                           return (DelayStmt x1 x2)
                    9 -> do x1 <- get
                            x2 <- get
-                           return (WaitStmt x1 x2)
+                           return (EventControlStmt x1 x2)
                    10 -> do x1 <- get
                             x2 <- get
-                            x3 <- get
-                            return (SeqBlock x1 x2 x3)
+                            return (WaitStmt x1 x2)
                    11 -> do x1 <- get
                             x2 <- get
                             x3 <- get
-                            return (ParBlock x1 x2 x3)
+                            return (SeqBlock x1 x2 x3)
                    12 -> do x1 <- get
                             x2 <- get
-                            return (TaskStmt x1 x2)
+                            x3 <- get
+                            return (ParBlock x1 x2 x3)
                    13 -> do x1 <- get
                             x2 <- get
-                            return (TaskEnableStmt x1 x2)
+                            return (TaskStmt x1 x2)
                    14 -> do x1 <- get
-                            return (DisableStmt x1)
+                            x2 <- get
+                            return (TaskEnableStmt x1 x2)
                    15 -> do x1 <- get
-                            return (AssignStmt x1)
+                            return (DisableStmt x1)
                    16 -> do x1 <- get
-                            return (DeAssignStmt x1)
+                            return (AssignStmt x1)
                    17 -> do x1 <- get
-                            return (ForceStmt x1)
+                            return (DeAssignStmt x1)
                    18 -> do x1 <- get
+                            return (ForceStmt x1)
+                   19 -> do x1 <- get
                             return (ReleaseStmt x1)
                    _ -> error "Corrupted binary data for Statement"
 
@@ -1140,7 +1155,7 @@ instance Binary Range where
                return (Range x1 x2)
 
 
-instance Binary DelayOrEventControl where
+instance Binary AssignmentControl where
         put x
           = case x of
                 DelayControl x1 -> do putWord8 0
@@ -1160,7 +1175,26 @@ instance Binary DelayOrEventControl where
                    2 -> do x1 <- get
                            x2 <- get
                            return (RepeatControl x1 x2)
-                   _ -> error "Corrupted binary data for DelayOrEventControl"
+                   _ -> error "Corrupted binary data for AssignmentControl"
+
+
+instance Binary EventControl where
+        put x
+          = case x of
+                EventControlIdent x1 -> do putWord8 0
+                                           put x1
+                EventControlExpr x1 -> do putWord8 1
+                                          put x1
+                EventControlWildCard -> putWord8 2
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (EventControlIdent x1)
+                   1 -> do x1 <- get
+                           return (EventControlExpr x1)
+                   2 -> return EventControlWildCard
+                   _ -> error "Corrupted binary data for EventControl"
 
 
 instance Binary EventExpr where
