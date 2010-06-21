@@ -58,7 +58,8 @@ mk_decl (NetDecl x mb_range mb_expr)
     mb_range' = fmap (V.SimpleRange . mk_range) mb_range
     decl = case mb_expr of
              Nothing   -> V.NetDecl V.Net_wire mb_range' Nothing [mk_ident x]
-             Just expr -> V.NetDeclAssign V.Net_wire Nothing mb_range' Nothing [mkAssign x expr]
+             Just expr -> V.NetDeclAssign V.Net_wire Nothing mb_range' Nothing
+                          [(mk_ident x, mk_expr expr)]
 
 mk_decl (NetAssign x expr)
   = [V.AssignItem Nothing Nothing [mkAssign x expr]]
