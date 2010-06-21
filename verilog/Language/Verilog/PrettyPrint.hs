@@ -280,8 +280,10 @@ ppStatement (ForStmt init_assign expr_cond loop_assign stmt)
     x = text "for" <+> parens (ppAssignment init_assign <> semi <+>
                                ppExpr expr_cond <> semi <+>
                                ppAssignment loop_assign)
-ppStatement (DelayOrEventControlStmt ctrl stmt)
-  = ppDelayOrEventControl ctrl `nestStmt` maybe semi ppStatement stmt
+ppStatement (DelayOrEventControlStmt ctrl mb_stmt)
+  = case mb_stmt of
+      Just stmt -> ppDelayOrEventControl ctrl `nestStmt` ppStatement stmt
+      Nothing   -> ppDelayOrEventControl ctrl <> semi
 ppStatement (WaitStmt expr stmt)
   = (text "wait" <+> parens (ppExpr expr)) `nestStmt` maybe semi ppStatement stmt
 ppStatement (SeqBlock mb_name decls stmts)
