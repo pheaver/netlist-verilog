@@ -379,10 +379,25 @@ ppExpr' prec (ExprBinary op expr1 expr2)
   where
     e = fsep [ppExpr' op_prec expr1, text x, ppExpr' (op_prec + 1) expr2 ]
     (x, op_prec) = lookupOp op binary_op_table
-ppExpr' prec (ExprCond e1 e2 e3)
+
+-- this adds unnecessary parens, but it makes the concrete syntax much easier to read
+ppExpr' _prec (ExprCond e1 e2 e3)
+  = pp e1 <+> char '?' <+> pp e2 <+> colon <+> pp e3
+  where
+    pp e
+      | add_parens e = parens (ppExpr e)
+      | otherwise    = ppExpr e
+
+    add_parens :: Expression -> Bool
+    add_parens ExprCond{} = True
+    add_parens _          = False
+
+{-
+ppExpr' _prec (ExprCond e1 e2 e3)
   = if prec > cond_prec then parens e else e
   where
     e = ppExpr e1 <+> char '?' <+> ppExpr e2 <+> colon <+> ppExpr e3
+-}
 ppExpr' _ (ExprFunCall x es)
   = ppIdent x <+> parens (commasep (map ppExpr es))
 
