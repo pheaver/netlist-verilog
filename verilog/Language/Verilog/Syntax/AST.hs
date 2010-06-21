@@ -1302,6 +1302,7 @@ instance Binary RegType where
                 Reg_integer -> putWord8 1
                 Reg_time -> putWord8 2
                 Reg_real -> putWord8 3
+                Reg_realtime -> putWord8 4
         get
           = do i <- getWord8
                case i of
@@ -1309,5 +1310,6 @@ instance Binary RegType where
                    1 -> return Reg_integer
                    2 -> return Reg_time
                    3 -> return Reg_real
+                   4 -> return Reg_realtime
                    _ -> error "Corrupted binary data for RegType"
 -- GENERATED STOP
