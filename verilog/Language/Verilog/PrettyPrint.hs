@@ -174,7 +174,9 @@ ppNetDecl (NetDeclAssign t mb_strength mb_range mb_delay assignments)
     mb ppDriveStrength mb_strength <+>
     mb ppExpandRange mb_range <+>
     mb ppDelay mb_delay <+>
-    commasep (map ppAssignment assignments) <> semi
+    commasep [ ppIdent x <+> equals <+> ppExpr e
+               | (x, e) <- assignments
+             ] <> semi
 
 ppRegDecl :: RegDecl -> Doc
 ppRegDecl (RegDecl reg_type mb_range vars)

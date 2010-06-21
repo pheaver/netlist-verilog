@@ -241,8 +241,11 @@ data InOutDecl
 
 data NetDecl
   = NetDecl NetType (Maybe ExpandRange) (Maybe Delay) [Ident]
-  | NetDeclAssign NetType (Maybe DriveStrength) (Maybe ExpandRange) (Maybe Delay) [Assignment]
-  -- TODO: net decl: trireg <charge_strength>? <expandrange>? <delay>?
+  | NetDeclAssign NetType (Maybe DriveStrength) (Maybe ExpandRange)
+    (Maybe Delay) [(Ident, Expression)]
+  -- TODO trireg <charge_strength>? <expandrange>? <delay>?
+  -- TODO allow mixing assignment and non-assignments, such as:
+  --      wire x = 1, y, z = 0;
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- note that only the "reg" type allows for a vector range before the RegVar,
