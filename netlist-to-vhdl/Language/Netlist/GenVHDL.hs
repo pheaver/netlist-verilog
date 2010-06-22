@@ -64,7 +64,7 @@ decl (MemDecl i Nothing dsize) = Just $
 decl (MemDecl i (Just asize) dsize) = Just $
   text "type" <+> mtype  <+> text "is" <+>
        text "array" <+> range asize <+> text "of" <+> slv_type dsize <> semi $$
-  text "signal" <+> text i <> text "_ram" <+> colon <+> mtype 
+  text "signal" <+> text i <> text "_ram" <+> colon <+> mtype
  where mtype = text i <> text "_memory_type"
 
 decl d = Nothing
@@ -156,13 +156,13 @@ stmt (Case d ps def) =
 expr (ExprNum i) = int $ fromIntegral i
 expr (ExprBit x) = quotes (int x)
 expr (ExprLit 1 val) = quotes (integer val)
-expr (ExprLit size val) = doubleQuotes 
+expr (ExprLit size val) = doubleQuotes
 	$ text
 	$ map (\ x -> if x then '1' else '0')
-	$ map odd 
-	$ reverse 
-	$ take size 
-	$ map (`mod` 2) 
+	$ map odd
+	$ reverse
+	$ take size
+	$ map (`mod` 2)
 	$ iterate (`div` 2)
 	$ val
 expr (ExprVar n) = text n
@@ -188,7 +188,7 @@ expr x = text (show x)
 --
 
 mkSensitivityList  proc@(ProcessDecl evs) = nub event_names
-  where event_names = 
+  where event_names =
 	 	--   AJG: This is now *only* based on the 'Event' vars, nothing else.
 		map (\ (e,_) -> case e of
 				 Event (ExprVar name) _ -> ExprVar name
@@ -235,9 +235,9 @@ binOp Nor = "nor"
 binOp Xor = "xor"
 binOp Xnor = "xnor"
 binOp ShiftLeft = "sll"
-binOp ShiftRight = "shr"
-binOp RotateLeft = "rotl"
-binOp RotateRight = "rotr"
+binOp ShiftRight = "srl"
+binOp RotateLeft = "rol"
+binOp RotateRight = "ror"
 
 
 slv_type Nothing = text "std_logic"
