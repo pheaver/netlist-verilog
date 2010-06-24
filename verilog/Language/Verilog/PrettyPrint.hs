@@ -49,14 +49,15 @@ ppModule (Module name ports body)
     text "endmodule" <> char '\n'
 
 ppItem :: Item -> Doc
-ppItem (ParamDeclItem x)   = ppParamDecl x
-ppItem (InputDeclItem x)   = ppInputDecl x
-ppItem (OutputDeclItem x)  = ppOutputDecl x
-ppItem (InOutDeclItem x)   = ppInOutDecl x
-ppItem (NetDeclItem x)     = ppNetDecl x
-ppItem (RegDeclItem x)     = ppRegDecl x
-ppItem (EventDeclItem x)   = ppEventDecl x
-ppItem (ModuleInstItem x)  = ppModuleInst x
+ppItem (ParamDeclItem x)     = ppParamDecl x
+ppItem (InputDeclItem x)     = ppInputDecl x
+ppItem (OutputDeclItem x)    = ppOutputDecl x
+ppItem (InOutDeclItem x)     = ppInOutDecl x
+ppItem (NetDeclItem x)       = ppNetDecl x
+ppItem (RegDeclItem x)       = ppRegDecl x
+ppItem (EventDeclItem x)     = ppEventDecl x
+ppItem (PrimitiveInstItem x) = ppPrimitiveInst x
+ppItem (ModuleInstItem x)    = ppModuleInst x
 ppItem (ParamOverrideItem xs)
   = text "defparam" <+> ppParamAssigns xs <> semi
 ppItem (AssignItem mb_strength mb_delay assignments)
@@ -199,6 +200,19 @@ ppEventDecl (EventDecl vars)
 
 -- -----------------------------------------------------------------------------
 -- 3. Primitive Instances
+
+ppPrimitiveInst :: PrimitiveInst -> Doc
+ppPrimitiveInst (PrimitiveInst prim_type strength delay insts)
+  = text (show prim_type) <+> mb ppDriveStrength strength <+>
+    mb ppDelay delay <+> commasep (map ppPrimInst insts) <> semi
+
+ppPrimInst :: PrimInst -> Doc
+ppPrimInst (PrimInst prim_name es)
+  = mb ppPrimName prim_name <+> parens (commasep (map ppExpr es))
+
+ppPrimName :: PrimInstName -> Doc
+ppPrimName (PrimInstName x r)
+  = ppIdent x <> mb ppRange r
 
 -- -----------------------------------------------------------------------------
 -- 4. Module Instantiations

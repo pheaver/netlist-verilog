@@ -46,6 +46,7 @@ module Language.Verilog.Syntax.AST
   NetDecl(..), RegDecl(..), RegType(..), EventDecl(..),
 
   -- * Primitive Instances
+  PrimitiveInst(..), PrimInst(..), PrimInstName(..), PrimType(..),
 
   -- * Module Instantiations
   ModuleInst(..), Parameter(..), Instance(..), Connections(..), NamedConnection(..),
@@ -104,7 +105,7 @@ data Item
   | NetDeclItem NetDecl
   | RegDeclItem RegDecl
   | EventDeclItem EventDecl
-  -- TODO: GateDecl
+  | PrimitiveInstItem PrimitiveInst
   -- TODO: UDPInst
   | ModuleInstItem ModuleInst
   | ParamOverrideItem [ParamAssign]
@@ -268,37 +269,54 @@ newtype EventDecl
 -- -----------------------------------------------------------------------------
 -- 3. Primitive Instances
 
-{-
-data GateDecl
-  = GateDecl GateType (Maybe DriveStrength) (Maybe Delay) [GateInst]
+data PrimitiveInst
+  = PrimitiveInst PrimType (Maybe DriveStrength) (Maybe Delay) [PrimInst]
   deriving (Eq, Ord, Show, Data, Typeable)
 
-data GateInst
-  = GateInst (Maybe GateInstName) [Terminal]
+data PrimInst
+  = PrimInst (Maybe PrimInstName) [Expression]
   deriving (Eq, Ord, Show, Data, Typeable)
 
-data GateInstName
-  = GateInstName Ident (Maybe Range)
+data PrimInstName
+  = PrimInstName Ident (Maybe Range)
   deriving (Eq, Ord, Show, Data, Typeable)
 
-type GateType = String
+data PrimType
+  = Gate_and | Gate_nand | Gate_or | Gate_nor | Gate_xor | Gate_xnor | Gate_not
+  | Gate_buf | Gate_bufif0 | Gate_bufif1
+  | Gate_notif0 | Gate_notify1 | Gate_pulldown | Gate_pullup
+  | Gate_nmos | Gate_rnmos | Gate_pmos | Gate_rpmos | Gate_cmos | Gate_rcmos
+  | Gate_tran | Gate_rtran
+  | Gate_tranif0 | Gate_rtranif0 | Gate_tranif1 | Gate_rtranif1
+  deriving (Eq, Ord, Bounded, Enum, Data, Typeable)
 
-gateTypes :: [GateType]
-gateTypes
-  = [ "and", "nand", "or", "nor", "xor", "xnor", "buf", "bufif0", "bufif1"
-    , "not", "notif0", "notif1", "pulldown", "pullup", "nmos", "rnmos", "pmos"
-    , "rpmos", "cmos", "rcmos", "tran", "rtran", "tranif0", "rtranif0"
-    , "tranif1", "rtranif1"
-    ]
-
-validGateType :: GateType -> Bool
-validGateType = flip elem gateTypes
-
-data Terminal
-  = ExprTerminal Expression
-  | IdentTerminal Ident
-  deriving (Eq, Ord, Show, Data, Typeable)
--}
+instance Show PrimType where
+  show Gate_and      = "and"
+  show Gate_nand     = "nand"
+  show Gate_or       = "or"
+  show Gate_nor      = "nor"
+  show Gate_xor      = "xor"
+  show Gate_xnor     = "xnor"
+  show Gate_not      = "not"
+  show Gate_buf      = "buf"
+  show Gate_bufif0   = "bufif0"
+  show Gate_bufif1   = "bufif1"
+  show Gate_notif0   = "notif0"
+  show Gate_notify1  = "notify1"
+  show Gate_pulldown = "pulldown"
+  show Gate_pullup   = "pullup"
+  show Gate_nmos     = "nmos"
+  show Gate_rnmos    = "rnmos"
+  show Gate_pmos     = "pmos"
+  show Gate_rpmos    = "rpmos"
+  show Gate_cmos     = "cmos"
+  show Gate_rcmos    = "rcmos"
+  show Gate_tran     = "tran"
+  show Gate_rtran    = "rtran"
+  show Gate_tranif0  = "tranif0"
+  show Gate_rtranif0 = "rtranif0"
+  show Gate_tranif1  = "tranif1"
+  show Gate_rtranif1 = "rtranif1"
 
 -- -----------------------------------------------------------------------------
 -- 4. Module Instantiations
@@ -604,17 +622,19 @@ instance Binary Item where
                                      put x1
                 EventDeclItem x1 -> do putWord8 6
                                        put x1
-                ModuleInstItem x1 -> do putWord8 7
-                                        put x1
-                ParamOverrideItem x1 -> do putWord8 8
+                PrimitiveInstItem x1 -> do putWord8 7
                                            put x1
-                AssignItem x1 x2 x3 -> do putWord8 9
+                ModuleInstItem x1 -> do putWord8 8
+                                        put x1
+                ParamOverrideItem x1 -> do putWord8 9
+                                           put x1
+                AssignItem x1 x2 x3 -> do putWord8 10
                                           put x1
                                           put x2
                                           put x3
-                InitialItem x1 -> do putWord8 10
+                InitialItem x1 -> do putWord8 11
                                      put x1
-                AlwaysItem x1 -> do putWord8 11
+                AlwaysItem x1 -> do putWord8 12
                                     put x1
         get
           = do i <- getWord8
@@ -634,16 +654,18 @@ instance Binary Item where
                    6 -> do x1 <- get
                            return (EventDeclItem x1)
                    7 -> do x1 <- get
-                           return (ModuleInstItem x1)
+                           return (PrimitiveInstItem x1)
                    8 -> do x1 <- get
-                           return (ParamOverrideItem x1)
+                           return (ModuleInstItem x1)
                    9 -> do x1 <- get
-                           x2 <- get
-                           x3 <- get
-                           return (AssignItem x1 x2 x3)
+                           return (ParamOverrideItem x1)
                    10 -> do x1 <- get
-                            return (InitialItem x1)
+                            x2 <- get
+                            x3 <- get
+                            return (AssignItem x1 x2 x3)
                    11 -> do x1 <- get
+                            return (InitialItem x1)
+                   12 -> do x1 <- get
                             return (AlwaysItem x1)
                    _ -> error "Corrupted binary data for Item"
 
@@ -878,6 +900,101 @@ instance Binary EventDecl where
         get
           = do x1 <- get
                return (EventDecl x1)
+
+
+instance Binary PrimitiveInst where
+        put (PrimitiveInst x1 x2 x3 x4)
+          = do put x1
+               put x2
+               put x3
+               put x4
+        get
+          = do x1 <- get
+               x2 <- get
+               x3 <- get
+               x4 <- get
+               return (PrimitiveInst x1 x2 x3 x4)
+
+
+instance Binary PrimInst where
+        put (PrimInst x1 x2)
+          = do put x1
+               put x2
+        get
+          = do x1 <- get
+               x2 <- get
+               return (PrimInst x1 x2)
+
+
+instance Binary PrimInstName where
+        put (PrimInstName x1 x2)
+          = do put x1
+               put x2
+        get
+          = do x1 <- get
+               x2 <- get
+               return (PrimInstName x1 x2)
+
+
+instance Binary PrimType where
+        put x
+          = case x of
+                Gate_and -> putWord8 0
+                Gate_nand -> putWord8 1
+                Gate_or -> putWord8 2
+                Gate_nor -> putWord8 3
+                Gate_xor -> putWord8 4
+                Gate_xnor -> putWord8 5
+                Gate_not -> putWord8 6
+                Gate_buf -> putWord8 7
+                Gate_bufif0 -> putWord8 8
+                Gate_bufif1 -> putWord8 9
+                Gate_notif0 -> putWord8 10
+                Gate_notify1 -> putWord8 11
+                Gate_pulldown -> putWord8 12
+                Gate_pullup -> putWord8 13
+                Gate_nmos -> putWord8 14
+                Gate_rnmos -> putWord8 15
+                Gate_pmos -> putWord8 16
+                Gate_rpmos -> putWord8 17
+                Gate_cmos -> putWord8 18
+                Gate_rcmos -> putWord8 19
+                Gate_tran -> putWord8 20
+                Gate_rtran -> putWord8 21
+                Gate_tranif0 -> putWord8 22
+                Gate_rtranif0 -> putWord8 23
+                Gate_tranif1 -> putWord8 24
+                Gate_rtranif1 -> putWord8 25
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Gate_and
+                   1 -> return Gate_nand
+                   2 -> return Gate_or
+                   3 -> return Gate_nor
+                   4 -> return Gate_xor
+                   5 -> return Gate_xnor
+                   6 -> return Gate_not
+                   7 -> return Gate_buf
+                   8 -> return Gate_bufif0
+                   9 -> return Gate_bufif1
+                   10 -> return Gate_notif0
+                   11 -> return Gate_notify1
+                   12 -> return Gate_pulldown
+                   13 -> return Gate_pullup
+                   14 -> return Gate_nmos
+                   15 -> return Gate_rnmos
+                   16 -> return Gate_pmos
+                   17 -> return Gate_rpmos
+                   18 -> return Gate_cmos
+                   19 -> return Gate_rcmos
+                   20 -> return Gate_tran
+                   21 -> return Gate_rtran
+                   22 -> return Gate_tranif0
+                   23 -> return Gate_rtranif0
+                   24 -> return Gate_tranif1
+                   25 -> return Gate_rtranif1
+                   _ -> error "Corrupted binary data for PrimType"
 
 
 instance Binary ModuleInst where
