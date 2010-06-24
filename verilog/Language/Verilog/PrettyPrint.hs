@@ -105,19 +105,12 @@ ppTableDefinition table
 
 ppCombinationalEntry :: CombinationalEntry -> Doc
 ppCombinationalEntry (CombinationalEntry inputs output)
-  = ppLevelSymbols inputs <+> colon <+> ppOutputSymbol output <> semi
+  = hsep (map ppLevelSymbol inputs) <+> colon <+> ppOutputSymbol output <> semi
 
 ppSequentialEntry :: SequentialEntry -> Doc
 ppSequentialEntry (SequentialEntry inputs state next_state)
-  = ppInputList inputs <+> colon <+>
-    ppLevelSymbol state <+> colon <+> ppNextState next_state
-
-ppLevelSymbols :: [LevelSymbol] -> Doc
-ppLevelSymbols = hsep . map ppLevelSymbol
-
-ppInputList :: InputList -> Doc
-ppInputList (LevelInputList xs)  = ppLevelSymbols xs
-ppInputList (EdgeInputList edge) = ppEdge edge
+  = hsep (map (either ppLevelSymbol ppEdge) inputs) <+> colon <+>
+    ppLevelSymbol state <+> colon <+> ppNextState next_state <> semi
 
 ppEdge :: Edge -> Doc
 ppEdge (EdgeLevels x y)

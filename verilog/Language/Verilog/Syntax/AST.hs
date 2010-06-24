@@ -39,7 +39,7 @@ module Language.Verilog.Syntax.AST
   LevelSymbol, levelSymbols, validLevelSymbol,
   OutputSymbol, outputSymbols, validOutputSymbol,
   NextState, nextStates, validNextState,
-  InputList(..), Edge(..), EdgeSymbol, edgeSymbols, validEdgeSymbol,
+  Edge(..), EdgeSymbol, edgeSymbols, validEdgeSymbol,
 
   -- * Items and Declarations
   Item(..), ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
@@ -189,16 +189,7 @@ validOutputSymbol :: Char -> Bool
 validOutputSymbol = flip elem outputSymbols
 
 data SequentialEntry
-  = SequentialEntry InputList LevelSymbol NextState
-  deriving (Eq, Ord, Show, Data, Typeable)
-
-data InputList
-  = LevelInputList [LevelSymbol]
-  | EdgeInputList {-[LevelSymbol]-} Edge {-[LevelSymbol]-}
-  -- the spec says
-  --    <edge_input_list> ::= <LEVEL_SYMBOL>* <edge> <LEVEL_SYMBOL>*
-  -- but I haven't figured out what the LEVEL_SYMBOLs are for yet,
-  -- so I left them out.
+  = SequentialEntry [Either LevelSymbol Edge] LevelSymbol NextState
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data Edge
@@ -756,23 +747,6 @@ instance Binary SequentialEntry where
                x2 <- get
                x3 <- get
                return (SequentialEntry x1 x2 x3)
-
-
-instance Binary InputList where
-        put x
-          = case x of
-                LevelInputList x1 -> do putWord8 0
-                                        put x1
-                EdgeInputList x1 -> do putWord8 1
-                                       put x1
-        get
-          = do i <- getWord8
-               case i of
-                   0 -> do x1 <- get
-                           return (LevelInputList x1)
-                   1 -> do x1 <- get
-                           return (EdgeInputList x1)
-                   _ -> error "Corrupted binary data for InputList"
 
 
 instance Binary Edge where
