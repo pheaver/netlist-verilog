@@ -266,7 +266,7 @@ ppStatement (IfStmt expr stmt1 stmt2)
 
 ppStatement (CaseStmt case_type expr case_items)
   = text (show case_type) <+> parens (ppExpr expr) $$
-    vcat (map ppCaseItem case_items) $$
+    nest 2 (vcat (map ppCaseItem case_items)) $$
     text "endcase"
 ppStatement (ForeverStmt stmt)
   = text "forever" `nestStmt` ppStatement stmt
@@ -336,7 +336,7 @@ ppAssignment (Assignment x expr)
 
 ppCaseItem :: CaseItem -> Doc
 ppCaseItem (CaseItem es mb_stmt)
-  = fsep [ commasep (map ppExpr es), maybe semi ppStatement mb_stmt ]
+  = fsep [ commasep (map ppExpr es) <+> colon, maybe semi ppStatement mb_stmt ]
 ppCaseItem (CaseDefault mb_stmt)
   = fsep [ text "default" <+> colon, maybe semi ppStatement mb_stmt ]
 
