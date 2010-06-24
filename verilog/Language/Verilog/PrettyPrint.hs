@@ -264,8 +264,8 @@ ppStatement (IfStmt expr stmt1 stmt2)
     ppElseBranch s
       = text "else" `nestStmt` ppStatement s
 
-ppStatement (CaseStmt expr case_items)
-  = text "case" <+> parens (ppExpr expr) $$
+ppStatement (CaseStmt case_type expr case_items)
+  = text (show case_type) <+> parens (ppExpr expr) $$
     vcat (map ppCaseItem case_items) $$
     text "endcase"
 ppStatement (ForeverStmt stmt)

@@ -51,7 +51,8 @@ module Language.Verilog.Syntax.AST
   ModuleInst(..), Parameter(..), Instance(..), Connections(..), NamedConnection(..),
 
   -- * Behavioral Statements
-  Statement(..), Assignment(..), LValue, CaseItem(..), BlockDecl(..),
+  Statement(..), Assignment(..), LValue,
+  CaseWord(..), CaseItem(..), BlockDecl(..),
 
   -- * Expressions
   Expression(..), ConstExpr, Number(..), Base(..), Sign(..), intExpr,
@@ -357,10 +358,8 @@ data Statement
   | NonBlockingAssignment LValue (Maybe AssignmentControl) Expression
   -- | @if@ statement.  Both branches are optional.
   | IfStmt Expression (Maybe Statement) (Maybe Statement)
-  -- | @case@ statement.
-  | CaseStmt Expression [CaseItem]
-  -- TODO: casex and casez
-  -- TODO: CaseStmt Expression [CaseItem]
+  -- | @case@, @casex@, or @casez@ statement.
+  | CaseStmt CaseWord Expression [CaseItem]
   -- | @forever@ statement, e.g. @forever $display(\"Hello!\")@;
   | ForeverStmt Statement
   -- | @repeat@ statement, e.g. @repeat (10) \@(posedge clk);@
@@ -404,6 +403,15 @@ data Assignment
 --    ident | ident[expr] | ident[const_expr : const_expr ] | concatentation
 -- However, we don't make that restriction in our AST.
 type LValue = Expression
+
+data CaseWord
+  = Case | Casex | Casez
+  deriving (Eq, Ord, Data, Typeable)
+
+instance Show CaseWord where
+  show Case  = "case"
+  show Casex = "casex"
+  show Casez = "casez"
 
 -- | One case item in a @case@ statement.
 data CaseItem
@@ -948,9 +956,10 @@ instance Binary Statement where
                                       put x1
                                       put x2
                                       put x3
-                CaseStmt x1 x2 -> do putWord8 3
-                                     put x1
-                                     put x2
+                CaseStmt x1 x2 x3 -> do putWord8 3
+                                        put x1
+                                        put x2
+                                        put x3
                 ForeverStmt x1 -> do putWord8 4
                                      put x1
                 RepeatStmt x1 x2 -> do putWord8 5
@@ -1014,7 +1023,8 @@ instance Binary Statement where
                            return (IfStmt x1 x2 x3)
                    3 -> do x1 <- get
                            x2 <- get
-                           return (CaseStmt x1 x2)
+                           x3 <- get
+                           return (CaseStmt x1 x2 x3)
                    4 -> do x1 <- get
                            return (ForeverStmt x1)
                    5 -> do x1 <- get
@@ -1072,6 +1082,21 @@ instance Binary Assignment where
           = do x1 <- get
                x2 <- get
                return (Assignment x1 x2)
+
+
+instance Binary CaseWord where
+        put x
+          = case x of
+                Case -> putWord8 0
+                Casex -> putWord8 1
+                Casez -> putWord8 2
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return Case
+                   1 -> return Casex
+                   2 -> return Casez
+                   _ -> error "Corrupted binary data for CaseWord"
 
 
 instance Binary CaseItem where
