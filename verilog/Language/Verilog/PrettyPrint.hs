@@ -38,6 +38,10 @@ tick = char '\''
 -- -----------------------------------------------------------------------------
 -- 1. Source Text
 
+ppVerilog :: Verilog -> Doc
+ppVerilog (Verilog ds)
+  = vcat (map ppDescription ds)
+
 ppDescription :: Description -> Doc
 ppDescription (ModuleDescription m) = ppModule m
 ppDescription (UDPDescription udp)  = ppUDP udp
