@@ -295,7 +295,7 @@ ppStatement (ForStmt init_assign expr_cond loop_assign stmt)
                                ppExpr expr_cond <> semi <+>
                                ppAssignment loop_assign)
 ppStatement (DelayStmt delay mb_stmt)
-  = ppDelay delay <+> mb ppStatement mb_stmt <> semi
+  = ppDelay delay <+> maybe semi ppStatement mb_stmt
 ppStatement (EventControlStmt ctrl mb_stmt)
   = case mb_stmt of
       Just stmt -> ppEventControl ctrl `nestStmt` ppStatement stmt
