@@ -1,0 +1,7 @@
+This directory contains some example Verilog files that are used to test the
+parser and pretty-printer.  They were downloaded from
+http://www.asic-world.com/examples/verilog/index.html
+
+Copyright (c) 1998-2010 Deepak Kumar Tala
+All rights reserved
+deepak@asic-world.com
