@@ -42,7 +42,8 @@ module Language.Verilog.Syntax.AST
   Edge(..), EdgeSymbol, edgeSymbols, validEdgeSymbol,
 
   -- * Items and Declarations
-  Item(..), ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
+  Item(..), FunctionType(..), LocalDecl(..),
+  ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
   NetDecl(..), RegDecl(..), RegType(..), EventDecl(..),
 
   -- * Module, UDP and Primitive Instantiations
@@ -110,8 +111,8 @@ data Item
   -- TODO: SpecifyBlock
   | InitialItem Statement
   | AlwaysItem Statement
-  -- TODO: Task
-  -- TODO: Function
+  | TaskItem Ident [LocalDecl] Statement
+  | FunctionItem (Maybe FunctionType) Ident [LocalDecl] Statement
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- --------------------
@@ -212,6 +213,23 @@ validNextState = flip elem nextStates
 
 -- -----------------------------------------------------------------------------
 -- 2. Declarations
+
+data FunctionType
+  = FunctionTypeRange Range
+  | FunctionTypeInteger
+  | FunctionTypeReal
+  deriving (Eq, Ord, Show, Data, Typeable)
+
+-- | A local declaration in a task or function definition, including the ports
+-- of the task or function. Functions are not allowed to have local 'output' and
+-- 'inout' declarations, but we do not make that restriction here.
+data LocalDecl
+  = LocalParamDecl ParamDecl
+  | LocalInputDecl InputDecl
+  | LocalOutputDecl OutputDecl
+  | LocalInOutDecl InOutDecl
+  | LocalRegDecl RegDecl
+  deriving (Eq, Ord, Show, Data, Typeable)
 
 newtype ParamDecl
   = ParamDecl [ParamAssign]
@@ -384,8 +402,8 @@ data Statement
   | EventControlStmt EventControl (Maybe Statement)
   -- | @wait@ statement, e.g. @wait (x) y <= 0;@
   | WaitStmt Expression (Maybe Statement)
-  -- | a sequence of statements between @begin@ and @end@ keywords.
   -- TODO: -> <name_of_event>
+  -- | a sequence of statements between @begin@ and @end@ keywords.
   | SeqBlock (Maybe Ident) [BlockDecl] [Statement]
   -- | a set of parallel statements, enclosed between @fork@ and @join@ keywords.
   | ParBlock (Maybe Ident) [BlockDecl] [Statement]
@@ -628,6 +646,15 @@ instance Binary Item where
                                      put x1
                 AlwaysItem x1 -> do putWord8 12
                                     put x1
+                TaskItem x1 x2 x3 -> do putWord8 13
+                                        put x1
+                                        put x2
+                                        put x3
+                FunctionItem x1 x2 x3 x4 -> do putWord8 14
+                                               put x1
+                                               put x2
+                                               put x3
+                                               put x4
         get
           = do i <- getWord8
                case i of
@@ -659,6 +686,15 @@ instance Binary Item where
                             return (InitialItem x1)
                    12 -> do x1 <- get
                             return (AlwaysItem x1)
+                   13 -> do x1 <- get
+                            x2 <- get
+                            x3 <- get
+                            return (TaskItem x1 x2 x3)
+                   14 -> do x1 <- get
+                            x2 <- get
+                            x3 <- get
+                            x4 <- get
+                            return (FunctionItem x1 x2 x3 x4)
                    _ -> error "Corrupted binary data for Item"
 
 
@@ -767,6 +803,52 @@ instance Binary Edge where
                    1 -> do x1 <- get
                            return (EdgeSymbol x1)
                    _ -> error "Corrupted binary data for Edge"
+
+
+instance Binary FunctionType where
+        put x
+          = case x of
+                FunctionTypeRange x1 -> do putWord8 0
+                                           put x1
+                FunctionTypeInteger -> putWord8 1
+                FunctionTypeReal -> putWord8 2
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (FunctionTypeRange x1)
+                   1 -> return FunctionTypeInteger
+                   2 -> return FunctionTypeReal
+                   _ -> error "Corrupted binary data for FunctionType"
+
+
+instance Binary LocalDecl where
+        put x
+          = case x of
+                LocalParamDecl x1 -> do putWord8 0
+                                        put x1
+                LocalInputDecl x1 -> do putWord8 1
+                                        put x1
+                LocalOutputDecl x1 -> do putWord8 2
+                                         put x1
+                LocalInOutDecl x1 -> do putWord8 3
+                                        put x1
+                LocalRegDecl x1 -> do putWord8 4
+                                      put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (LocalParamDecl x1)
+                   1 -> do x1 <- get
+                           return (LocalInputDecl x1)
+                   2 -> do x1 <- get
+                           return (LocalOutputDecl x1)
+                   3 -> do x1 <- get
+                           return (LocalInOutDecl x1)
+                   4 -> do x1 <- get
+                           return (LocalRegDecl x1)
+                   _ -> error "Corrupted binary data for LocalDecl"
 
 
 instance Binary ParamDecl where

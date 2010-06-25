@@ -78,6 +78,18 @@ ppItem (AlwaysItem (EventControlStmt ctrl stmt))
 ppItem (AlwaysItem stmt)
   = fsep [ text "always", nest 2 (ppStatement stmt) ]
 
+ppItem (TaskItem name decls stmt)
+  = text "task" <+> ppIdent name <> semi $$
+    nest 2 (vcat (map ppLocalDecl decls) $$
+            ppStatement stmt) $$
+    text "endtask"
+
+ppItem (FunctionItem t name decls stmt)
+  = text "function" <+> mb ppFunctionType t <+> ppIdent name <> semi $$
+    nest 2 (vcat (map ppLocalDecl decls) $$
+            ppStatement stmt) $$
+    text "endfunction"
+
 ppUDP :: UDP -> Doc
 ppUDP (UDP name output_var input_vars decls maybe_initial table_definition)
   = text "primitive" <+> ppIdent name <+>
@@ -144,6 +156,18 @@ ppEdgeSymbol x
 
 -- -----------------------------------------------------------------------------
 -- 2. Declarations
+
+ppFunctionType :: FunctionType -> Doc
+ppFunctionType (FunctionTypeRange r) = ppRange r
+ppFunctionType FunctionTypeInteger   = text "integer"
+ppFunctionType FunctionTypeReal      = text "real"
+
+ppLocalDecl :: LocalDecl -> Doc
+ppLocalDecl (LocalParamDecl x)       = ppParamDecl x
+ppLocalDecl (LocalInputDecl x)       = ppInputDecl x
+ppLocalDecl (LocalOutputDecl x)      = ppOutputDecl x
+ppLocalDecl (LocalInOutDecl x)       = ppInOutDecl x
+ppLocalDecl (LocalRegDecl x)         = ppRegDecl x
 
 ppParamDecl :: ParamDecl -> Doc
 ppParamDecl (ParamDecl paramAssigns)
