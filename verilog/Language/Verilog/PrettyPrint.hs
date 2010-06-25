@@ -57,7 +57,7 @@ ppItem (NetDeclItem x)       = ppNetDecl x
 ppItem (RegDeclItem x)       = ppRegDecl x
 ppItem (EventDeclItem x)     = ppEventDecl x
 ppItem (PrimitiveInstItem x) = ppPrimitiveInst x
-ppItem (ModuleInstItem x)    = ppModuleInst x
+ppItem (InstanceItem x)      = ppInstance x
 ppItem (ParamOverrideItem xs)
   = text "defparam" <+> ppParamAssigns xs <> semi
 ppItem (AssignItem mb_strength mb_delay assignments)
@@ -210,26 +210,29 @@ ppPrimName (PrimInstName x r)
 -- -----------------------------------------------------------------------------
 -- 4. Module Instantiations
 
-ppModuleInst :: ModuleInst -> Doc
-ppModuleInst (ModuleInst name params insts)
-  = ppIdent name<+> ppParameters params $$
-    nest 2 (ppInstances insts) <> semi
+ppInstance :: Instance -> Doc
+ppInstance (Instance name delays_or_params insts)
+  = ppIdent name <+> ppDelaysOrParams delays_or_params $$
+    nest 2 (ppInsts insts) <> semi
 
-ppParameters :: [Parameter] -> Doc
-ppParameters [] = empty
-ppParameters ps
+ppDelaysOrParams :: Either [Expression] [Parameter] -> Doc
+ppDelaysOrParams (Left [])  = empty
+ppDelaysOrParams (Right []) = empty
+ppDelaysOrParams (Left es)
+  = char '#' <> parens (commasep (map ppExpr es))
+ppDelaysOrParams (Right ps)
   = char '#' <> parens (commasep (map ppParameter ps))
 
 ppParameter :: Parameter -> Doc
 ppParameter (Parameter x expr)
   = period <> ppIdent x <> parens (ppExpr expr)
 
-ppInstances :: [Instance] -> Doc
-ppInstances insts
-  = vcat (punctuate comma (map ppInstance insts))
+ppInsts :: [Inst] -> Doc
+ppInsts insts
+  = vcat (punctuate comma (map ppInst insts))
 
-ppInstance :: Instance -> Doc
-ppInstance (Instance x r cs)
+ppInst :: Inst -> Doc
+ppInst (Inst x r cs)
   = ppIdent x <> mb ppRange r <> parens (commasep ppCs)
   where
     ppCs = case cs of

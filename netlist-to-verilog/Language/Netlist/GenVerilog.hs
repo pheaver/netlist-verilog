@@ -72,10 +72,11 @@ mk_decl (MemDecl x mb_range1 mb_range2)
                     ])]
 
 mk_decl (InstDecl mod_name inst_name params inputs outputs)
-  = [V.ModuleInstItem (V.ModuleInst (mk_ident mod_name) v_params [inst])]
+  = [V.InstanceItem (V.Instance (mk_ident mod_name) v_params [inst])]
   where
-    v_params  = [ V.Parameter (mk_ident x) (mk_expr expr) | (x, expr) <- params ]
-    inst      = V.Instance (mk_ident inst_name) Nothing (V.NamedConnections cs)
+    v_params  = Right [ V.Parameter (mk_ident x) (mk_expr expr)
+                        | (x, expr) <- params ]
+    inst      = V.Inst (mk_ident inst_name) Nothing (V.NamedConnections cs)
     cs        = [ V.NamedConnection (mk_ident x) (mk_expr expr)
                   | (x, expr) <- inputs ++ outputs ]
 

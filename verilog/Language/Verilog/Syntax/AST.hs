@@ -45,11 +45,9 @@ module Language.Verilog.Syntax.AST
   Item(..), ParamDecl(..), InputDecl(..), OutputDecl(..), InOutDecl(..),
   NetDecl(..), RegDecl(..), RegType(..), EventDecl(..),
 
-  -- * Primitive Instances
+  -- * Module, UDP and Primitive Instantiations
   PrimitiveInst(..), PrimInst(..), PrimInstName(..), PrimType(..),
-
-  -- * Module Instantiations
-  ModuleInst(..), Parameter(..), Instance(..), Connections(..), NamedConnection(..),
+  Instance(..), Parameter(..), Inst(..), Connections(..), NamedConnection(..),
 
   -- * Behavioral Statements
   Statement(..), Assignment(..), LValue,
@@ -106,8 +104,7 @@ data Item
   | RegDeclItem RegDecl
   | EventDeclItem EventDecl
   | PrimitiveInstItem PrimitiveInst
-  -- TODO: UDPInst
-  | ModuleInstItem ModuleInst
+  | InstanceItem Instance
   | ParamOverrideItem [ParamAssign]
   | AssignItem (Maybe DriveStrength) (Maybe Delay) [Assignment]
   -- TODO: SpecifyBlock
@@ -258,7 +255,7 @@ newtype EventDecl
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- -----------------------------------------------------------------------------
--- 3. Primitive Instances
+-- Module, UDP, and primitive instances
 
 data PrimitiveInst
   = PrimitiveInst PrimType (Maybe DriveStrength) (Maybe Delay) [PrimInst]
@@ -309,18 +306,22 @@ instance Show PrimType where
   show Gate_tranif1  = "tranif1"
   show Gate_rtranif1 = "rtranif1"
 
--- -----------------------------------------------------------------------------
--- 4. Module Instantiations
+-- --------------------
+-- module and udp instantiations
 
--- | A module instantiation.  In Verilog, a module instantiation can list
--- multiple instances of the same module.  So, the arguments to @ModuleInst@ are
--- the name of the module (not the name of the instantiation), the list of
--- parameter assignments, and the list of module instances.  Each @Instance@ has
--- a name and port connections.
-data ModuleInst
-  = ModuleInst Ident         -- Name of the module
-               [Parameter]   -- Parameter value assignments
-               [Instance]    -- Module instances
+-- | A module or UDP instantiation.  The syntax for module and UDP instances is
+-- ambiguous.  If there is a @#@ followed by an expression, there is no way to
+-- know whether the expression is a delay for a UDP instance or a parameter
+-- assignment for a module instance, without looking at the names of the UDP
+-- declarations that are in scope (which is not a job for the parser).
+
+data Instance
+  = Instance
+    Ident                             -- ^ Name of the module (not the instance)
+    (Either [Expression] [Parameter]) -- ^ A list of delay expressions or
+                                      -- unnamed parameter expressions, or a
+                                      -- list of named parameter assignments
+    [Inst]                            -- ^ Module instances
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- the spec says this is just one or more expressions, but that doesn't seem
@@ -335,10 +336,10 @@ data Parameter
 -- | A module instance.  The name of the module and the parameter assignments
 -- are defined in @ModuleInst@, which has any number of @Instance@s.  The
 -- instance itself has a name and a list of port connections.
-data Instance
-  = Instance Ident          -- Name of the instance
-             (Maybe Range)  -- I'm actually not sure what this is for!
-             Connections    -- The (input and output) port connections.
+data Inst
+  = Inst Ident          -- Name of the instance
+         (Maybe Range)  -- I'm actually not sure what this is for!
+         Connections    -- The (input and output) port connections.
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- | Connections in a module instance can be all nnammed or all unnamed.  When
@@ -615,8 +616,8 @@ instance Binary Item where
                                        put x1
                 PrimitiveInstItem x1 -> do putWord8 7
                                            put x1
-                ModuleInstItem x1 -> do putWord8 8
-                                        put x1
+                InstanceItem x1 -> do putWord8 8
+                                      put x1
                 ParamOverrideItem x1 -> do putWord8 9
                                            put x1
                 AssignItem x1 x2 x3 -> do putWord8 10
@@ -647,7 +648,7 @@ instance Binary Item where
                    7 -> do x1 <- get
                            return (PrimitiveInstItem x1)
                    8 -> do x1 <- get
-                           return (ModuleInstItem x1)
+                           return (InstanceItem x1)
                    9 -> do x1 <- get
                            return (ParamOverrideItem x1)
                    10 -> do x1 <- get
@@ -971,8 +972,8 @@ instance Binary PrimType where
                    _ -> error "Corrupted binary data for PrimType"
 
 
-instance Binary ModuleInst where
-        put (ModuleInst x1 x2 x3)
+instance Binary Instance where
+        put (Instance x1 x2 x3)
           = do put x1
                put x2
                put x3
@@ -980,7 +981,7 @@ instance Binary ModuleInst where
           = do x1 <- get
                x2 <- get
                x3 <- get
-               return (ModuleInst x1 x2 x3)
+               return (Instance x1 x2 x3)
 
 
 instance Binary Parameter where
@@ -993,8 +994,8 @@ instance Binary Parameter where
                return (Parameter x1 x2)
 
 
-instance Binary Instance where
-        put (Instance x1 x2 x3)
+instance Binary Inst where
+        put (Inst x1 x2 x3)
           = do put x1
                put x2
                put x3
@@ -1002,7 +1003,7 @@ instance Binary Instance where
           = do x1 <- get
                x2 <- get
                x3 <- get
-               return (Instance x1 x2 x3)
+               return (Inst x1 x2 x3)
 
 
 instance Binary Connections where
