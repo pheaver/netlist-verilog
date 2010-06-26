@@ -249,7 +249,7 @@ udp_port_decl
 
 udp_initial_statement :: Stream s Identity Char => P s UDPInitialStatement
 udp_initial_statement
-  = do reserved "initia"
+  = do reserved "initial"
        x <- ident
        symbol "="
        e <- expression
