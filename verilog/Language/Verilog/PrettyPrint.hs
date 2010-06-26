@@ -48,9 +48,13 @@ ppDescription (UDPDescription udp)  = ppUDP udp
 
 ppModule :: Module -> Doc
 ppModule (Module name ports body)
-  = text "module" <+> ppIdent name <+> parens (ppIdents ports) <> semi $$
+  = text "module" <+> ppIdent name <+> ppPorts ports <> semi $$
     nest 2 (vcat (map ppItem body)) $$
     text "endmodule" <> char '\n'
+
+ppPorts :: [Ident] -> Doc
+ppPorts []  = empty
+ppPorts xs  = parens (ppIdents xs)
 
 ppItem :: Item -> Doc
 ppItem (ParamDeclItem x)     = ppParamDecl x
