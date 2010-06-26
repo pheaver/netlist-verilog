@@ -773,7 +773,16 @@ expr_slice
 
 expr_concat :: Stream s Identity Char => P s Expression
 expr_concat
-  = liftM ExprConcat (braces (commaSep1 expression))
+  = do symbol "{"
+       e <- expression
+       choice [ do comma
+                   es <- commaSep expression
+                   symbol "}"
+                   return (ExprConcat (e:es))
+              , do es <- braces (commaSep expression)
+                   symbol "}"
+                   return (ExprMultiConcat e es)
+              ]
 
 lvalue :: Stream s Identity Char => P s LValue
 lvalue
