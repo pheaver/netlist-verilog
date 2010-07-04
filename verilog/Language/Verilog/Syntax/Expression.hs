@@ -20,7 +20,8 @@ module Language.Verilog.Syntax.Expression
     Ident(..),
 
     -- * Expressions
-    Expression(..), ConstExpr, Number(..), Base(..), Sign(..), intExpr,
+    Expression, ConstExpr, Expression'(..), ConstExpr',
+    Number(..), Base(..), Sign(..), intExpr,
 
     -- * Unary Operators
     UnaryOp(..),
@@ -38,29 +39,44 @@ import Language.Verilog.Syntax.Ident
 --------------------------------------------------------------------------------
 -- expressions
 
--- | Expressions.  In numeric expressions, we leave the size and value as
--- Strings instead of representing them as some integral type.
-data Expression
-  = ExprNum Number
+-- | Expressions.  The AST uses 'Number' to represent literals, which is a
+-- rather unstructured type (most values are left as strings).  This type is
+-- parametrized over the type for literals so that the user can instantiate it
+-- with a more structured type, for example if they want to build a simulator or
+-- compiler.
+data Expression' x
+  = ExprNum x
   -- | A variable reference
   | ExprVar Ident
   -- | A literal string, in quotes.  Used for parameter values.
   | ExprString String
   -- | Index operator, e.g. @x[y]@.
-  | ExprIndex Ident Expression
+  | ExprIndex Ident (Expression' x)
   -- | A slice operation of a range of indices, e.g. x[10:15].
-  | ExprSlice Ident ConstExpr ConstExpr
-  -- these next two aren't in the spec, but they're certainly in the Verilog standard
-  | ExprSlicePlus Ident Expression ConstExpr   -- ^ e.g. @x[y +: 10]@
-  | ExprSliceMinus Ident Expression ConstExpr  -- ^ e.g. @x[y -: 10]@
-  | ExprConcat [Expression]                    -- ^ Concatenation, e.g. @{a, b, c}@
-  | ExprMultiConcat Expression [Expression]    -- ^ Replication, e.g. @{10,{a, b, c}}@
+  | ExprSlice Ident (ConstExpr' x) (ConstExpr' x)
+  -- | e.g. @x[y +: 10]@
+  | ExprSlicePlus Ident (Expression' x) (ConstExpr' x)
+  -- | e.g. @x[y -: 10]@
+  | ExprSliceMinus Ident (Expression' x) (ConstExpr' x)
+  -- | Concatenation, e.g. @{a, b, c}@
+  | ExprConcat [Expression' x]
+  -- | Replication, e.g. @{10,{a, b, c}}@
+  | ExprMultiConcat (Expression' x) [Expression' x]
   -- TODO: <mintypmax_expression>
-  | ExprUnary UnaryOp Expression               -- ^ Application of a unary operator
-  | ExprBinary BinaryOp Expression Expression  -- ^ Application of a binary operator
-  | ExprCond Expression Expression Expression  -- ^ Conditional expression, e.g. @x ? y : z@
-  | ExprFunCall Ident [Expression]             -- ^ Function call, e.g. @f(a, b, c)@
+  -- | Application of a unary operator
+  | ExprUnary UnaryOp (Expression' x)
+  -- | Application of a binary operator
+  | ExprBinary BinaryOp (Expression' x) (Expression' x)
+  -- | Conditional expression, e.g. @x ? y : z@
+  | ExprCond (Expression' x) (Expression' x) (Expression' x)
+  -- | Function call, e.g. @f(a, b, c)@
+  | ExprFunCall Ident [Expression' x]
   deriving (Eq, Ord, Show, Data, Typeable)
+
+type ConstExpr' x = Expression' x
+
+type ConstExpr = ConstExpr' Number
+type Expression = Expression' Number
 
 data Sign
   = Pos | Neg
@@ -95,8 +111,6 @@ instance Show Number where
       case maybe_exponent of
         Just (mb_sign, e) -> "e" ++ (maybe "" show mb_sign) ++ e
         Nothing           -> ""
-
-type ConstExpr = Expression
 
 data Base = BinBase | OctBase | DecBase | HexBase
   deriving (Eq, Ord, Data, Typeable)
@@ -202,7 +216,7 @@ instance Show BinaryOp where
 -- GENERATED START
 
 
-instance Binary Expression where
+instance (Binary x) => Binary (Expression' x) where
         put x
           = case x of
                 ExprNum x1 -> do putWord8 0
@@ -288,7 +302,7 @@ instance Binary Expression where
                    12 -> do x1 <- get
                             x2 <- get
                             return (ExprFunCall x1 x2)
-                   _ -> error "Corrupted binary data for Expression"
+                   _ -> error "Corrupted binary data for Expression'"
 
 
 instance Binary Sign where

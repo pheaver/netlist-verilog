@@ -55,7 +55,8 @@ module Language.Verilog.Syntax.AST
   CaseWord(..), CaseItem(..), BlockDecl(..),
 
   -- * Expressions
-  Expression(..), ConstExpr, Number(..), Base(..), Sign(..), intExpr,
+  Expression, ConstExpr, Expression'(..), ConstExpr',
+  Number(..), Base(..), Sign(..), intExpr,
   UnaryOp(..), BinaryOp(..),
 
   -- * Miscellaneous
