@@ -155,8 +155,8 @@ stmt (Case d ps def) =
 
 expr (ExprNum i) = int $ fromIntegral i
 expr (ExprBit x) = quotes (int x)
-expr (ExprLit 1 val) = quotes (integer val)
-expr (ExprLit size val) = doubleQuotes
+-- expr (ExprLit 1 val) = quotes (integer val) -- AJG: 1 element arrays are still arrays.
+expr (ExprLit size val) = doubleQuotes 
 	$ text
 	$ map (\ x -> if x then '1' else '0')
 	$ map odd
