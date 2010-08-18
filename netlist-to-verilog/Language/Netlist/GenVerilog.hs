@@ -83,6 +83,9 @@ mk_decl (InstDecl mod_name inst_name params inputs outputs)
 mk_decl (InitProcessDecl stmt)
   = [V.InitialItem (mk_stmt stmt)]
 
+mk_decl (CommentDecl str)
+  = [V.CommentItem str]
+
 -- nothing to do here
 mk_decl (ProcessDecl [])
   = []

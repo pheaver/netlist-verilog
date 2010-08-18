@@ -94,6 +94,11 @@ ppItem (FunctionItem t name decls stmt)
             ppStatement stmt) $$
     text "endfunction"
 
+-- (copied from andy's code in GenVHDL)
+-- TODO: get multline working
+inst _ (CommentItem msg)
+  = vcat [ text "//" <+> text m | m <- lines msg ]
+
 ppUDP :: UDP -> Doc
 ppUDP (UDP name output_var input_vars decls maybe_initial table_definition)
   = text "primitive" <+> ppIdent name <+>

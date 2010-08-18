@@ -113,6 +113,7 @@ data Item
   | AlwaysItem Statement
   | TaskItem Ident [LocalDecl] Statement
   | FunctionItem (Maybe FunctionType) Ident [LocalDecl] Statement
+  | CommentItem String
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- --------------------
