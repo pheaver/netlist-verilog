@@ -106,6 +106,10 @@ data Decl
   -- Equivalent to Verilog \"initial\" statement.
   | InitProcessDecl Stmt
 
+  -- | A basic comment (typically is placed above a decl of interest).
+  -- Newlines are allowed, and generate new single line comments.
+  | CommentDecl String
+
   deriving (Eq, Ord, Show, Data, Typeable)
 
 data Range
@@ -257,6 +261,9 @@ instance Binary Decl where
                                      put x1
                 InitProcessDecl x1 -> do putWord8 5
                                          put x1
+		CommentDecl x1 -> do putWord8 6
+				     put x1
+
         get
           = do i <- getWord8
                case i of
@@ -281,6 +288,8 @@ instance Binary Decl where
                            return (ProcessDecl x1)
                    5 -> do x1 <- get
                            return (InitProcessDecl x1)
+		   6 -> do x1 <- get
+			   return (CommentDecl x1)
                    _ -> error "Corrupted binary data for Decl"
 
 
