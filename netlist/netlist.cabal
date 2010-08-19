@@ -18,8 +18,6 @@ flag base4
    Description: Compile using base-4 instead of base-3
    Default: True
 
-flag split-base
-
 Library
   ghc-options:          -Wall
 
@@ -28,12 +26,8 @@ Library
                         Language.Netlist.Util
   other-modules:        Language.Netlist.Examples
 
-  -- TODO figure out exactly which package versions we are compatible with
-  if flag(split-base)
-    build-depends:      binary, pretty, containers
-    if flag(base4)
-       build-depends:   base == 4.*, syb
-    else
-       build-depends:   base == 3.*
+  build-depends:      binary, pretty, containers
+  if flag(base4)
+     build-depends:   base == 4.*, syb
   else
-    build-depends:      base < 3
+     build-depends:   base == 3.*

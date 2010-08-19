@@ -1,5 +1,5 @@
 name:           verilog
-version:        0.1
+version:        0.2
 synopsis:       Verilog AST and pretty printer
 description:    Verilog AST and pretty printer -- parser to come later
 category:       Language
@@ -16,21 +16,19 @@ flag base4
    Description: Compile using base-4 instead of base-3
    Default: True
 
-flag split-base
-
 Library
   ghc-options:          -Wall
 
   exposed-modules:      Language.Verilog.Syntax,
+                        Language.Verilog.Syntax.Expression,
+                        Language.Verilog.Syntax.Ident,
+                        Language.Verilog.Syntax.AST,
+                        Language.Verilog.Parser,
                         Language.Verilog.PrettyPrint,
                         Language.Verilog
 
-  -- TODO figure out exactly which package versions we are compatible with
-  if flag(split-base)
-    build-depends:      binary, pretty
-    if flag(base4)
-       build-depends:   base == 4.*, syb
-    else
-       build-depends:   base == 3.*
+  build-depends:      binary, pretty, parsec == 3.*, mtl
+  if flag(base4)
+     build-depends:   base == 4.*, syb
   else
-    build-depends:      base < 3
+     build-depends:   base == 3.*

@@ -15,8 +15,6 @@ flag base4
    Description: Compile using base-4 instead of base-3
    Default: True
 
-flag split-base
-
 Library
   ghc-options:          -Wall
 
@@ -24,12 +22,7 @@ Library
 
   build-depends:        netlist == 0.2, pretty >= 1.0, syb
 
-  -- TODO figure out exactly which package versions we are compatible with
-  if flag(split-base)
---    build-depends:
-    if flag(base4)
-       build-depends:   base == 4.*
-    else
-       build-depends:   base == 3.*
+  if flag(base4)
+     build-depends:   base == 4.*
   else
-    build-depends:      base < 3
+     build-depends:   base == 3.*
