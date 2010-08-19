@@ -96,7 +96,7 @@ ppItem (FunctionItem t name decls stmt)
 
 -- (copied from andy's code in GenVHDL)
 -- TODO: get multline working
-inst _ (CommentItem msg)
+ppItem (CommentItem msg)
   = vcat [ text "//" <+> text m | m <- lines msg ]
 
 ppUDP :: UDP -> Doc
