@@ -115,6 +115,9 @@ inst gensym (InitProcessDecl s) = Just $
     text "-- synthesis_on"
   where senlist = parens empty
 
+-- TODO: get multline working
+inst _ (CommentDecl msg) = Just $ 
+	(vcat [ text "--" <+> text m | m <- lines msg ])
 
 inst _ d = Nothing
 
