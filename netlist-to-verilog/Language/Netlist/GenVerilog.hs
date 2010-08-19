@@ -174,7 +174,7 @@ mk_expr (ExprIndex x e)
 mk_expr (ExprSlice x e1 e2)
   = V.ExprSlice (mk_ident x) (mk_expr e1) (mk_expr e2)
 mk_expr (ExprSliceOff x e i)
-  = f (mk_ident x) (mk_expr e) (V.intExpr (abs (fromIntegral i)))
+  = f (mk_ident x) (mk_expr e) (V.intExpr (abs i))
   where
     f = if i < 0 then V.ExprSliceMinus else V.ExprSlicePlus
 mk_expr (ExprConcat exprs)
@@ -187,6 +187,9 @@ mk_expr (ExprCond expr1 expr2 expr3)
   = V.ExprCond (mk_expr expr1) (mk_expr expr2) (mk_expr expr3)
 mk_expr (ExprFunCall x es)
   = V.ExprFunCall (mk_ident x) (map mk_expr es)
+
+mk_expr ExprCase{}
+  = error "GenVerilog: Not yet supported: ExprCase"
 
 mk_ident :: Ident -> V.Ident
 mk_ident x = V.Ident x
