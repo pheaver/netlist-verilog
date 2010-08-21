@@ -17,18 +17,19 @@ import Language.Netlist.AST
 
 import Text.PrettyPrint
 import Data.Maybe(catMaybes)
-import Data.List(nub, (\\))
+import Data.List(nub)
 
 
 -- | Generate a 'Language.Netlist.AST.Module' as a VHDL file, in a 'Doc' structure . The ['String'] argument
 -- is the list of extra modules to import, typically [\"work.all\"].
 genVHDL :: Module -> [String] -> Doc
-genVHDL m others 
+genVHDL m others
 	  =  imports others $$
              entity m $$
              architecture m
 
-imports others = vcat  
+imports :: [String] -> Doc
+imports others = vcat
 	[ text "library IEEE" <> semi
         , text "use IEEE.STD_LOGIC_1164.ALL" <> semi
         , text "use IEEE.NUMERIC_STD.ALL" <> semi
@@ -43,8 +44,7 @@ entity m = text "entity" <+> text (module_name m) <+> text "is" $$
             nest 2 (text "port" <> parens (vcat $ punctuate semi ports) <> semi) $$
             text "end" <+> text "entity" <+> text (module_name m) <> semi
 
-  where name = text (module_name m)
-        ports = [text i <+> colon <+> text "in" <+> slv_type ran | (i,ran) <- module_inputs m ] ++
+  where ports = [text i <+> colon <+> text "in" <+> slv_type ran | (i,ran) <- module_inputs m ] ++
                 [text i <+> colon <+> text "out" <+> slv_type ran | (i,ran) <- module_outputs m ]
 
 
@@ -58,6 +58,8 @@ architecture m = text "architecture" <+> text "str" <+> text "of" <+>  text (mod
 decls :: [Decl] -> Doc
 decls [] = empty
 decls ds = (vcat $ punctuate semi $ catMaybes $ map decl ds) <> semi
+
+decl :: Decl -> Maybe Doc
 decl (NetDecl i r Nothing) = Just $
   text "signal" <+> text i <+> colon <+> slv_type r
 
@@ -73,7 +75,7 @@ decl (MemDecl i (Just asize) dsize) = Just $
   text "signal" <+> text i <> text "_ram" <+> colon <+> mtype
  where mtype = text i <> text "_memory_type"
 
-decl d = Nothing
+decl _d = Nothing
 
 
 
@@ -83,7 +85,7 @@ insts [] = empty
 insts is = case catMaybes $ zipWith inst gensyms is of
              [] -> empty
              is' -> (vcat $ punctuate semi is') <> semi
-  where gensyms = ["proc" ++ show i | i <- [0..]]
+  where gensyms = ["proc" ++ show i | i <- [(0::Integer)..]]
 
 inst :: String -> Decl -> Maybe Doc
 inst _ (NetAssign i e) = Just $ text i <+> text "<=" <+> expr e
@@ -125,18 +127,19 @@ inst gensym (InitProcessDecl s) = Just $
 inst _ (CommentDecl msg) = Just $
 	(vcat [ text "--" <+> text m | m <- lines msg ])
 
-inst _ d = Nothing
+inst _ _d = Nothing
 
-
+pstmts :: [(Event, Stmt)] -> Doc
 pstmts ss = (vcat $ zipWith mkIf is ss)  $$ text "end if" <> semi
   where is = (text "if"):(repeat (text "elsif"))
         mkIf i (p,s) = i <+> nest 2 (event p) <+> text "then" $$
                        nest 2 (stmt s)
 
-
+event :: Event -> Doc
 event (Event i PosEdge) = text "rising_edge" <> parens (expr i)
 event (Event i NegEdge) = text "falling_edge" <> parens (expr i)
 
+stmt :: Stmt -> Doc
 stmt (Assign l r) = expr l <+> text "<=" <+> expr r <> semi
 stmt (Seq ss) = vcat (map stmt ss)
 stmt (If e t Nothing) =
@@ -161,7 +164,7 @@ stmt (Case d ps def) =
                         nest 2 (stmt s)
 
 
-
+expr :: Expr -> Doc
 expr (ExprNum i) = int $ fromIntegral i
 expr (ExprBit x) = quotes (int x)
 -- expr (ExprLit 1 val) = quotes (integer val) -- AJG: 1 element arrays are still arrays.
@@ -196,7 +199,8 @@ expr x = text (show x)
 -- | mkSensitivityList takes a process and extracts the appropriate sensitify list
 --
 
-mkSensitivityList  proc@(ProcessDecl evs) = nub event_names
+mkSensitivityList :: Decl -> [Expr]
+mkSensitivityList (ProcessDecl evs) = nub event_names
   where event_names =
 	 	--   AJG: This is now *only* based on the 'Event' vars, nothing else.
 		map (\ (e,_) -> case e of
@@ -204,7 +208,10 @@ mkSensitivityList  proc@(ProcessDecl evs) = nub event_names
 				 _ -> error $ "strange form for mkSensitivityList " ++ show e
 		    ) evs
 
+lookupUnary :: UnaryOp -> Doc -> Doc
 lookupUnary op e = text (unOp op) <> parens e
+
+unOp :: UnaryOp -> String
 unOp UPlus = ""
 unOp UMinus = "-"
 unOp LNeg = "not"
@@ -218,9 +225,10 @@ unOp Neg = "-"
 
 
 -- "(\\(.*\\), text \\(.*\\)),"
+lookupBinary :: BinaryOp -> Doc -> Doc -> Doc
 lookupBinary op a b = parens $ a <+> text (binOp op) <+> b
 
-
+binOp :: BinaryOp -> String
 binOp Pow = "**"
 binOp Plus = "+"
 binOp Minus = "-"
@@ -248,9 +256,9 @@ binOp ShiftRight = "srl"
 binOp RotateLeft = "rol"
 binOp RotateRight = "ror"
 
-
+slv_type :: Maybe Range -> Doc
 slv_type Nothing = text "std_logic"
 slv_type (Just r) =  text "std_logic_vector" <> range r
 
-
+range :: Range -> Doc
 range (Range high low) = parens (expr high <+> text "downto" <+> expr low)
