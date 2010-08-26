@@ -279,9 +279,8 @@ instance Binary Decl where
                                      put x1
                 InitProcessDecl x1 -> do putWord8 5
                                          put x1
-		CommentDecl x1 -> do putWord8 6
-				     put x1
-
+                CommentDecl x1 -> do putWord8 6
+                                     put x1
         get
           = do i <- getWord8
                case i of
@@ -306,8 +305,8 @@ instance Binary Decl where
                            return (ProcessDecl x1)
                    5 -> do x1 <- get
                            return (InitProcessDecl x1)
-		   6 -> do x1 <- get
-			   return (CommentDecl x1)
+                   6 -> do x1 <- get
+                           return (CommentDecl x1)
                    _ -> error "Corrupted binary data for Decl"
 
 

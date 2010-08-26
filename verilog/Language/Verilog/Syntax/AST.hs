@@ -657,6 +657,8 @@ instance Binary Item where
                                                put x2
                                                put x3
                                                put x4
+                CommentItem x1 -> do putWord8 15
+                                     put x1
         get
           = do i <- getWord8
                case i of
@@ -697,6 +699,8 @@ instance Binary Item where
                             x3 <- get
                             x4 <- get
                             return (FunctionItem x1 x2 x3 x4)
+                   15 -> do x1 <- get
+                            return (CommentItem x1)
                    _ -> error "Corrupted binary data for Item"
 
 
