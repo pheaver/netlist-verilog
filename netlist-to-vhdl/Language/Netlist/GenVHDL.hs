@@ -1,3 +1,16 @@
+--------------------------------------------------------------------------------
+-- |
+-- Module       :  Language.Netlist.GenVHDL
+-- Copyright    :  (c) University of Kansas 2010
+-- License      :  All rights reserved
+--
+-- Maintainer   : garrin.kimmell@gmail.com
+-- Stability    : experimental
+-- Portability  : non-portable
+--
+-- Translates a Netlist AST ('Language.Netlist.AST') to VHDL.
+--------------------------------------------------------------------------------
+
 module Language.Netlist.GenVHDL(genVHDL) where
 
 import Language.Netlist.AST

@@ -3,10 +3,11 @@ version:        0.1
 synopsis:       Convert a Netlist AST to VHDL
 description:    Convert a Netlist AST to VHDL
 category:       Language
-license:        AllRightsReserved
+license:        BSD3
+license-file:   LICENSE
 copyright:      Copyright (c) 2010 University of Kansas
 author:         Garrin Kimmell
-maintainer:     kimmell@ku.edu
+maintainer:     garrin.kimmell@gmail.com
 package-url:    git://github.com/pheaver/netlist-verilog.git
 build-type:     Simple
 cabal-version:  >=1.6
