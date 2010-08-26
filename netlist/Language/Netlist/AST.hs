@@ -73,7 +73,7 @@ data Decl
   --
   -- The first range is the most significant dimension.
   -- So, @MemDecl x (0, 31) (7, 0)@ corresponds to the following in Verilog:
-  --    reg [7:0] x [0:31]
+  -- @reg [7:0] x [0:31]@
   | MemDecl Ident (Maybe Range) (Maybe Range)
 
   -- | A module/entity instantiation.  The arguments are the name of the module,
@@ -113,18 +113,22 @@ data Decl
 
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | A 'Range' tells us the type of a bit vector.  It can count up or down.
 data Range
   = Range ConstExpr ConstExpr
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- | A constant expression is simply an expression that must be a constant
--- (i.e. the only free variables are static parameters).
+-- (i.e. the only free variables are static parameters).  This restriction is
+-- not made in the AST.
 type ConstExpr = Expr
 
 data Event
   = Event Expr Edge
   deriving (Eq, Ord, Show, Data, Typeable)
 
+-- | An event can be triggered by the rising edge ('PosEdge') or falling edge
+-- ('NegEdge') of a signal.
 data Edge
   = PosEdge
   | NegEdge
@@ -177,7 +181,7 @@ instance Num Expr where
   signum _    = error "Num Expr: no definition for signum"
   fromInteger = ExprNum
 
--- behavioral statement
+-- | Behavioral sequential statement
 data Stmt
   = Assign LValue Expr         -- ^ non-blocking assignment
   | If Expr Stmt (Maybe Stmt)  -- ^ @if@ statement
@@ -188,8 +192,9 @@ data Stmt
                                -- useful for calling Verilog tasks (e.g. $readmem).
   deriving (Eq, Ord, Show, Data, Typeable)
 
--- | Not all expressions are allowed on the LHS of an assignment, but we're lazy
--- and don't enforce that restriction in the AST.
+-- | An 'LValue' is something that can appear on the left-hand side of an
+-- assignment.  We're lazy and do not enforce any restriction, and define this
+-- simply to be 'Expr'.
 type LValue = Expr
 
 -- | Unary operators
