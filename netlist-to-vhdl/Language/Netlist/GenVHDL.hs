@@ -27,7 +27,6 @@ genVHDL m =  imports $$
 imports = vcat $ [
           text "library IEEE" <> semi,
           text "use IEEE.STD_LOGIC_1164.ALL" <> semi,
-	  text "use IEEE.STD_LOGIC_UNSIGNED.ALL" <> semi,
           text "use IEEE.NUMERIC_STD.ALL" <> semi,
           text "use work.all" <> semi
           ]
@@ -129,7 +128,7 @@ inst gensym (InitProcessDecl s) = Just $
   where senlist = parens empty
 
 -- TODO: get multline working
-inst _ (CommentDecl msg) = Just $ 
+inst _ (CommentDecl msg) = Just $
 	(vcat [ text "--" <+> text m | m <- lines msg ])
 
 inst _ d = Nothing
@@ -172,7 +171,7 @@ stmt (Case d ps def) =
 expr (ExprNum i) = int $ fromIntegral i
 expr (ExprBit x) = quotes (int x)
 -- expr (ExprLit 1 val) = quotes (integer val) -- AJG: 1 element arrays are still arrays.
-expr (ExprLit size val) = doubleQuotes 
+expr (ExprLit size val) = doubleQuotes
 	$ text
 	$ map (\ x -> if x then '1' else '0')
 	$ map odd
