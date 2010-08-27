@@ -1,0 +1,62 @@
+#+TITLE:     README.org
+#+AUTHOR:    Philip Weaver
+#+EMAIL:     philip.weaver@gmail.com
+#+DATE:      2010-08-26 Thu
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+INFOJS_OPT: view:nil toc:nil ltoc:t mouse:underline buttons:0 path:http://orgmode.org/org-info.js
+#+EXPORT_SELECT_TAGS: export
+#+EXPORT_EXCLUDE_TAGS: noexport
+#+LINK_UP:
+#+LINK_HOME:
+
+* Overview
+This repository holds 4 Haskell packages:
+- netlist - An abstract syntax tree (AST) for a very simple hardware description
+  language (HDL) that corresponds to a limited subset of VHDL and Verilog.
+- verilog - An AST, parser, and pretty-printer for Verilog.
+- netlist-to-verilog - A translator from the netlist AST to Verilog AST.
+- netlist-to-vhdl - A translator from the netlist AST to VHDL concrete syntax.
+
+Once these packages are released on [[http://hackage.haskell.org/][Hackage]], links to their packages will appear
+here.
+
+There are 3 forks of the repository on github, [[http://github.com/pheaver/netlist-verilog][pheaver]], [[http://github.com/garrinkimmell/netlist-verilog][garrinkimmell]], and
+[[http://github.com/andygill/netlist-verilog][andygill]].
+
+* Installation
+
+** Install from Hackage
+
+This is not yet possible.  Once these packages are released on [[http://hackage.haskell.org/][Hackage]], they can
+be installed like this:
+
+: cabal install netlist
+: cabal install netlist-to-vhdl
+: cabal install verilog
+: cabal install netlist-to-verilog
+
+** Install from git repository
+
+Clone one of the aforementioned repositories.  For example:
+
+: git clone git://github.com/pheaver/netlist-verilog.git
+
+Change directories into the new repositories:
+
+: cd netlist-verilog
+
+Then, you can install each package like so:
+
+: cd netlist-verilog
+: (cd netlist && cabal install)
+: (cd netlist-to-vhdl && cabal install)
+: (cd verilog && cabal install)
+: (cd netlist-to-verilog && cabal install)
+
+* Todo
+- Release netlist and netlist-to-vhdl packages on hackage.
+- Finish haddock documentation for verilog and netlist-to-verilog, release packages on hackage.
