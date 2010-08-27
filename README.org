@@ -1,4 +1,4 @@
-#+TITLE:     README.org
+#+TITLE:     The Haskell Netlist Repository
 #+AUTHOR:    Philip Weaver
 #+EMAIL:     philip.weaver@gmail.com
 #+DATE:      2010-08-26 Thu
@@ -45,13 +45,12 @@ Clone one of the aforementioned repositories.  For example:
 
 : git clone git://github.com/pheaver/netlist-verilog.git
 
-Change directories into the new repositories:
+Change directories into the new repository:
 
 : cd netlist-verilog
 
 Then, you can install each package like so:
 
-: cd netlist-verilog
 : (cd netlist && cabal install)
 : (cd netlist-to-vhdl && cabal install)
 : (cd verilog && cabal install)
