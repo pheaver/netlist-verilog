@@ -18,21 +18,24 @@ import Language.Netlist.AST
 import Text.PrettyPrint
 import Data.Maybe(catMaybes)
 import Data.List(nub, (\\))
-genVHDL :: Module -> Doc
-genVHDL m =  imports $$
 
 
 -- | Generate a 'Language.Netlist.AST.Module' as a VHDL file, in a 'Doc' structure . The ['String'] argument
 -- is the list of extra modules to import, typically [\"work.all\"].
+genVHDL :: Module -> [String] -> Doc
+genVHDL m others 
+	  =  imports others $$
              entity m $$
              architecture m
 
-imports = vcat $ [
-          text "library IEEE" <> semi,
-          text "use IEEE.STD_LOGIC_1164.ALL" <> semi,
-          text "use IEEE.NUMERIC_STD.ALL" <> semi,
-          text "use work.all" <> semi
-          ]
+imports others = vcat  
+	[ text "library IEEE" <> semi
+        , text "use IEEE.STD_LOGIC_1164.ALL" <> semi
+        , text "use IEEE.NUMERIC_STD.ALL" <> semi
+	] $$ vcat [
+          text ("use " ++ other) <> semi
+	| other <- others
+        ]
 
 
 entity :: Module -> Doc
