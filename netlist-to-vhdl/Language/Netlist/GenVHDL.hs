@@ -21,6 +21,10 @@ import Data.Generics.Schemes
 import Data.List(nub, (\\))
 genVHDL :: Module -> Doc
 genVHDL m =  imports $$
+
+
+-- | Generate a 'Language.Netlist.AST.Module' as a VHDL file, in a 'Doc' structure . The ['String'] argument
+-- is the list of extra modules to import, typically [\"work.all\"].
              entity m $$
              architecture m
 
