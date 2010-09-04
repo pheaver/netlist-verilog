@@ -17,7 +17,6 @@ import Language.Netlist.AST
 
 import Text.PrettyPrint
 import Data.Maybe(catMaybes)
-import Data.Generics.Schemes
 import Data.List(nub, (\\))
 genVHDL :: Module -> Doc
 genVHDL m =  imports $$
