@@ -20,11 +20,12 @@ import Data.Maybe(catMaybes)
 import Data.List(nub)
 
 
--- | Generate a 'Language.Netlist.AST.Module' as a VHDL file, in a 'Doc' structure . The ['String'] argument
+-- | Generate a 'Language.Netlist.AST.Module' as a VHDL file . The ['String'] argument
 -- is the list of extra modules to import, typically [\"work.all\"].
-genVHDL :: Module -> [String] -> Doc
-genVHDL m others
-	  =  imports others $$
+genVHDL :: Module -> [String] -> String
+genVHDL m others = render vhdl ++ "\n"
+  where
+    vhdl  =  imports others $$
              entity m $$
              architecture m
 
