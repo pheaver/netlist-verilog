@@ -50,22 +50,10 @@ entity m = text "entity" <+> text (module_name m) <+> text "is" $$
 
 architecture :: Module -> Doc
 architecture m = text "architecture" <+> text "str" <+> text "of" <+>  text (module_name m) <+> text "is" $$
-                 utilities $$
                  nest 2 (decls (module_decls m)) $$
                  text "begin" $$
                  nest 2 (insts (module_decls m)) $$
                  text "end" <+> text "architecture" <+> text "str" <> semi
-
-utilities = vcat $ [
- text "function active_high (arg : boolean) return std_ulogic is",
- text "  begin",
- text "  if arg  then return '1';",
- text "    else return '0';",
- text "   end if;",
- text "end function active_high;"
-            ]
-
-
 
 decls :: [Decl] -> Doc
 decls [] = empty
