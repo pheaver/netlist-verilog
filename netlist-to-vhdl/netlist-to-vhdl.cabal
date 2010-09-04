@@ -1,5 +1,5 @@
 name:           netlist-to-vhdl
-version:        0.1
+version:        0.2
 synopsis:       Convert a Netlist AST to VHDL
 description:    Convert a Netlist AST to VHDL
 category:       Language
@@ -21,7 +21,7 @@ Library
 
   exposed-modules:      Language.Netlist.GenVHDL
 
-  build-depends:        netlist == 0.2, pretty >= 1.0, syb
+  build-depends:        netlist == 0.2, pretty >= 1.0
 
   if flag(base4)
      build-depends:   base == 4.*
