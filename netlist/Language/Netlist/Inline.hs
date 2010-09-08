@@ -79,7 +79,6 @@ shouldInline ignore deps x e
   | x `notElem` ignore, Just n <- checkUsers
   = case e of
       -- always inline trivial expressions regardless of the number of users.
-      ExprNum _                 -> True
       ExprLit _ _               -> True
       ExprString _              -> True
       ExprVar _                 -> True

@@ -19,14 +19,20 @@ import Language.Netlist.AST
 
 data Direction = Up | Down
 
+unsizedInteger :: Integer -> Expr
+unsizedInteger = unsizedIntegral
+
+unsizedIntegral :: Integral a => a -> Expr
+unsizedIntegral = ExprLit Nothing . ExprNum . toInteger
+
 -- | Given a direction and size, maybe generate a 'Range', where a size of 1
 -- yields 'Nothing'.
 makeRange :: Direction -> Size -> Maybe Range
 makeRange _ 1 = Nothing
 makeRange d sz
   | sz > 1
-  = let upper = ExprNum (fromIntegral (sz - 1))
-        lower = ExprNum 0
+  = let upper = unsizedIntegral (sz - 1)
+        lower = unsizedInteger 0
     in Just $ case d of
                 Up    -> Range lower upper
                 Down  -> Range upper lower

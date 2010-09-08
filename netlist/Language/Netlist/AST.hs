@@ -146,10 +146,7 @@ data Edge
 -- which we don't bother to support.
 
 data Expr
-
-  = ExprNum Integer               -- ^ un unsized number
-  | ExprLit Size Integer          -- ^ a sized bitvector
-  | ExprBit Int                   -- ^ in vhdl, bits are different than 1-bit bitvectors
+  = ExprLit (Maybe Size) ExprLit  -- ^ a sized or unsized literal
   | ExprVar Ident                 -- ^ a variable ference
   | ExprString String             -- ^ a quoted string (useful for parameters)
 
@@ -166,20 +163,15 @@ data Expr
   | ExprFunCall Ident [Expr]      -- ^ a function application
   deriving (Eq, Ord, Show, Data, Typeable)
 
-instance Num Expr where
-  (+) (ExprNum x) (ExprNum y) = ExprNum (x + y)
-  (+) x y = ExprBinary Plus x y
+data ExprLit
+  = ExprNum Integer               -- ^ a number
+  | ExprBit Bit                   -- ^ a single bit.  in vhdl, bits are different than 1-bit bitvectors
+  | ExprBitVector [Bit]
+  deriving (Eq, Ord, Show, Data, Typeable)
 
-  (-) (ExprNum x) (ExprNum y) = ExprNum (x - y)
-  (-) x y = ExprBinary Minus x y
-
-  (*) (ExprNum x) (ExprNum y) = ExprNum (x * y)
-  (*) x y = ExprBinary Times x y
-
-  negate      = ExprUnary LNeg
-  abs _       = error "Num Expr: no definition for abs"
-  signum _    = error "Num Expr: no definition for signum"
-  fromInteger = ExprNum
+data Bit
+  = T | F | U | Z
+  deriving (Eq, Ord, Show, Data, Typeable)
 
 -- | Behavioral sequential statement
 data Stmt
@@ -351,94 +343,124 @@ instance Binary Edge where
 instance Binary Expr where
         put x
           = case x of
-                ExprNum x1 -> do putWord8 0
-                                 put x1
-                ExprLit x1 x2 -> do putWord8 1
+                ExprLit x1 x2 -> do putWord8 0
                                     put x1
                                     put x2
-                ExprBit x1 -> do putWord8 2
+                ExprVar x1 -> do putWord8 1
                                  put x1
-                ExprVar x1 -> do putWord8 3
-                                 put x1
-                ExprString x1 -> do putWord8 4
+                ExprString x1 -> do putWord8 2
                                     put x1
-                ExprIndex x1 x2 -> do putWord8 5
+                ExprIndex x1 x2 -> do putWord8 3
                                       put x1
                                       put x2
-                ExprSlice x1 x2 x3 -> do putWord8 6
+                ExprSlice x1 x2 x3 -> do putWord8 4
                                          put x1
                                          put x2
                                          put x3
-                ExprSliceOff x1 x2 x3 -> do putWord8 7
+                ExprSliceOff x1 x2 x3 -> do putWord8 5
                                             put x1
                                             put x2
                                             put x3
-                ExprCase x1 x2 x3 -> do putWord8 8
+                ExprCase x1 x2 x3 -> do putWord8 6
                                         put x1
                                         put x2
                                         put x3
-                ExprConcat x1 -> do putWord8 9
+                ExprConcat x1 -> do putWord8 7
                                     put x1
-                ExprCond x1 x2 x3 -> do putWord8 10
+                ExprCond x1 x2 x3 -> do putWord8 8
                                         put x1
                                         put x2
                                         put x3
-                ExprUnary x1 x2 -> do putWord8 11
+                ExprUnary x1 x2 -> do putWord8 9
                                       put x1
                                       put x2
-                ExprBinary x1 x2 x3 -> do putWord8 12
+                ExprBinary x1 x2 x3 -> do putWord8 10
                                           put x1
                                           put x2
                                           put x3
-                ExprFunCall x1 x2 -> do putWord8 13
+                ExprFunCall x1 x2 -> do putWord8 11
                                         put x1
                                         put x2
         get
           = do i <- getWord8
                case i of
                    0 -> do x1 <- get
-                           return (ExprNum x1)
-                   1 -> do x1 <- get
                            x2 <- get
                            return (ExprLit x1 x2)
-                   2 -> do x1 <- get
-                           return (ExprBit x1)
-                   3 -> do x1 <- get
+                   1 -> do x1 <- get
                            return (ExprVar x1)
-                   4 -> do x1 <- get
+                   2 -> do x1 <- get
                            return (ExprString x1)
-                   5 -> do x1 <- get
+                   3 -> do x1 <- get
                            x2 <- get
                            return (ExprIndex x1 x2)
-                   6 -> do x1 <- get
+                   4 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprSlice x1 x2 x3)
-                   7 -> do x1 <- get
+                   5 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprSliceOff x1 x2 x3)
-                   8 -> do x1 <- get
+                   6 -> do x1 <- get
                            x2 <- get
                            x3 <- get
                            return (ExprCase x1 x2 x3)
-                   9 -> do x1 <- get
+                   7 -> do x1 <- get
                            return (ExprConcat x1)
+                   8 -> do x1 <- get
+                           x2 <- get
+                           x3 <- get
+                           return (ExprCond x1 x2 x3)
+                   9 -> do x1 <- get
+                           x2 <- get
+                           return (ExprUnary x1 x2)
                    10 -> do x1 <- get
                             x2 <- get
                             x3 <- get
-                            return (ExprCond x1 x2 x3)
-                   11 -> do x1 <- get
-                            x2 <- get
-                            return (ExprUnary x1 x2)
-                   12 -> do x1 <- get
-                            x2 <- get
-                            x3 <- get
                             return (ExprBinary x1 x2 x3)
-                   13 -> do x1 <- get
+                   11 -> do x1 <- get
                             x2 <- get
                             return (ExprFunCall x1 x2)
                    _ -> error "Corrupted binary data for Expr"
+
+
+instance Binary ExprLit where
+        put x
+          = case x of
+                ExprNum x1 -> do putWord8 0
+                                 put x1
+                ExprBit x1 -> do putWord8 1
+                                 put x1
+                ExprBitVector x1 -> do putWord8 2
+                                       put x1
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> do x1 <- get
+                           return (ExprNum x1)
+                   1 -> do x1 <- get
+                           return (ExprBit x1)
+                   2 -> do x1 <- get
+                           return (ExprBitVector x1)
+                   _ -> error "Corrupted binary data for ExprLit"
+
+
+instance Binary Bit where
+        put x
+          = case x of
+                T -> putWord8 0
+                F -> putWord8 1
+                U -> putWord8 2
+                Z -> putWord8 3
+        get
+          = do i <- getWord8
+               case i of
+                   0 -> return T
+                   1 -> return F
+                   2 -> return U
+                   3 -> return Z
+                   _ -> error "Corrupted binary data for Bit"
 
 
 instance Binary Stmt where
