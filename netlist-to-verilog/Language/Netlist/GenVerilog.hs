@@ -152,19 +152,34 @@ mk_stmt (FunCallStmt x es)
   | otherwise
   = error ("FunCallStmt " ++ x)
 
-mk_expr :: Expr -> V.Expression
-mk_expr (ExprNum x)
-  = V.intExpr x
-mk_expr (ExprLit sz x)
-  = V.ExprNum (V.IntNum Nothing (Just (show sz)) (Just base) str)
+mk_lit :: Maybe Size -> ExprLit -> V.Number
+mk_lit mb_sz lit
+  = V.IntNum Nothing (fmap show mb_sz) (Just base) str
   where
-    str = showIntAtBase base_int (hexdigits !!) x ""
-    -- we show everything in hexadecimal, except 1-bit values
-    (base_int, base) = if sz == 1 then (2, V.BinBase) else (16, V.HexBase)
+    is_bit = case (lit, mb_sz) of
+               (ExprBit{}, _)  -> True
+               (_, Just 1)     -> True
+               _               -> False
+
+    (base_int, base) = if is_bit then (2, V.BinBase) else (16, V.HexBase)
+
     hexdigits = "0123456789abcdef"
 
-mk_expr (ExprBit x)
-  = V.ExprNum (V.IntNum Nothing (Just "1") (Just V.BinBase) (show x))
+    str = case lit of
+            ExprNum x        -> showIntAtBase base_int (hexdigits !!) x ""
+            ExprBit b        -> [bit_char b]
+            ExprBitVector bs -> map bit_char bs
+
+bit_char :: Bit -> Char
+bit_char T = '1'
+bit_char F = '0'
+bit_char U = 'x'
+bit_char Z = 'z'
+
+mk_expr :: Expr -> V.Expression
+mk_expr (ExprLit mb_size lit)
+  = V.ExprNum $ mk_lit mb_size lit
+
 mk_expr (ExprString x)
   = V.ExprString x
 mk_expr (ExprVar x)
