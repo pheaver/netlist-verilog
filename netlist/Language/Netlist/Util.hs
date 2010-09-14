@@ -25,6 +25,12 @@ unsizedInteger = unsizedIntegral
 unsizedIntegral :: Integral a => a -> Expr
 unsizedIntegral = ExprLit Nothing . ExprNum . toInteger
 
+sizedInteger :: Int -> Integer -> Expr
+sizedInteger = sizedIntegral
+
+sizedIntegral :: Integral a => Int -> a -> Expr
+sizedIntegral sz = ExprLit (Just sz) . ExprNum . toInteger
+
 -- | Given a direction and size, maybe generate a 'Range', where a size of 1
 -- yields 'Nothing'.
 makeRange :: Direction -> Size -> Maybe Range
