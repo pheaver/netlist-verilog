@@ -165,19 +165,35 @@ stmt (Case d ps def) =
                         nest 2 (stmt s)
 
 
+to_bits :: Integral a => Int -> a -> [Bit]
+to_bits size val = map (\x -> if odd x then T else F)
+                   $ reverse
+                   $ take size
+                   $ map (`mod` 2)
+                   $ iterate (`div` 2)
+                   $ val
+
+bit_char :: Bit -> Char
+bit_char T = '1'
+bit_char F = '0'
+bit_char U = 'U'  -- 'U' means uninitialized,
+                  -- 'X' means forced to unknown.
+                  -- not completely sure that 'U' is the right choice here.
+bit_char Z = 'Z'
+
+bits :: [Bit] -> Doc
+bits = doubleQuotes . text . map bit_char
+
+expr_lit :: Maybe Size -> ExprLit -> Doc
+expr_lit Nothing (ExprNum i)          = int $ fromIntegral i
+expr_lit (Just sz) (ExprNum i)        = bits (to_bits sz i)
+expr_lit _ (ExprBit x)                = quotes (char (bit_char x))
+                                        -- ok to ignore the size here?
+expr_lit Nothing (ExprBitVector xs)   = bits xs
+expr_lit (Just sz) (ExprBitVector xs) = bits $ take sz xs
+
 expr :: Expr -> Doc
-expr (ExprNum i) = int $ fromIntegral i
-expr (ExprBit x) = quotes (int x)
--- expr (ExprLit 1 val) = quotes (integer val) -- AJG: 1 element arrays are still arrays.
-expr (ExprLit size val) = doubleQuotes
-	$ text
-	$ map (\ x -> if x then '1' else '0')
-	$ map odd
-	$ reverse
-	$ take size
-	$ map (`mod` 2)
-	$ iterate (`div` 2)
-	$ val
+expr (ExprLit mb_sz lit) = expr_lit mb_sz lit
 expr (ExprVar n) = text n
 expr (ExprIndex s i) = text s <> parens (expr i)
 expr (ExprSlice s h l)
