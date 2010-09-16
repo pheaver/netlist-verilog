@@ -4,10 +4,10 @@ all: derive
 PACKAGEDB=package.conf.d
 
 ifneq (,$(findstring CYGWIN, $(ARCH)))
-PREFIX_PATH:=$(shell cygpath.exe -m -w $(PWD))
+PREFIX_PATH:=$(shell cygpath.exe -m -w $(PWD))/dist
 PACKAGEDB_PATH:=$(shell cygpath.exe -m -w $(abspath $(PACKAGEDB)))
 else
-PREFIX_PATH=$(PWD)
+PREFIX_PATH=$(PWD)/dist
 PACKAGEDB_PATH=$(abspath $(PACKAGEDB))
 endif
 
