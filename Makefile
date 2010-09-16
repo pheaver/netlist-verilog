@@ -1,6 +1,19 @@
 .PHONY: all
 all: derive
 
+PACKAGEDB=package.conf.d
+
+.PHONY: packagedb
+packagedb: $(PACKAGEDB)
+$(PACKAGEDB):
+	ghc-pkg init $(PACKAGEDB)
+
+install-local:
+	cd netlist && cabal install --prefix=$(PWD) --package-db=../$(PACKAGEDB)
+	cd netlist-to-vhdl && cabal install --prefix=$(PWD) --package-db=../$(PACKAGEDB)
+	cd verilog && cabal install --prefix=$(PWD) --package-db=../$(PACKAGEDB)
+	cd netlist-to-verilog && cabal install --prefix=$(PWD) --package-db=../$(PACKAGEDB)
+
 .PHONY: derive
 # run derive on every file that has derived instances in it.
 # generated boilerplate code for instances of Binary.
