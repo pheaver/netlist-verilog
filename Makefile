@@ -27,3 +27,8 @@ derive:
 delete-trailing-whitespace:
 	@for f in `/usr/bin/find . -iname \*.hs`; do \
             sed -i -e 's/[ \t]*$$//g' $$f; done
+
+
+hudson:
+	cd netlist && cabal install
+	cd netlist-to-vhdl && cabal install
