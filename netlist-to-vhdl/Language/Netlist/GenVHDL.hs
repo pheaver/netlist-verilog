@@ -137,8 +137,10 @@ pstmts ss = (vcat $ zipWith mkIf is ss)  $$ text "end if" <> semi
                        nest 2 (stmt s)
 
 event :: Event -> Doc
-event (Event i PosEdge) = text "rising_edge" <> parens (expr i)
-event (Event i NegEdge) = text "falling_edge" <> parens (expr i)
+event (Event i PosEdge)   = text "rising_edge" <> parens (expr i)
+event (Event i NegEdge)   = text "falling_edge" <> parens (expr i)
+event (Event i AsyncHigh) = expr i <+> text "= '1'"
+event (Event i AsyncLow)  = expr i <+> text "= '0'"
 
 stmt :: Stmt -> Doc
 stmt (Assign l r) = expr l <+> text "<=" <+> expr r <> semi
