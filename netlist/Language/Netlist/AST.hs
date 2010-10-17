@@ -132,6 +132,8 @@ data Event
 data Edge
   = PosEdge
   | NegEdge
+  | AsyncHigh
+  | AsyncLow
   -- TODO: AnyEdge?
   deriving (Eq, Ord, Show, Data, Typeable)
 
