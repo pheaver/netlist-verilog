@@ -8,8 +8,9 @@ category:       Language
 license:        BSD3
 license-file:   LICENSE
 copyright:      Copyright (c) 2010 Signali Corp.
+                Copyright (c) 2010 Philip Weaver
 author:         Philip Weaver
-maintainer:     pweaver@signalicorp.com
+maintainer:     philip.weaver@gmail.com
 package-url:    git://github.com/pheaver/netlist-verilog.git
 build-type:     Simple
 cabal-version:  >=1.6
