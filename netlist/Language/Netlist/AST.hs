@@ -334,11 +334,15 @@ instance Binary Edge where
           = case x of
                 PosEdge -> putWord8 0
                 NegEdge -> putWord8 1
+                AsyncHigh -> putWord8 2
+                AsyncLow -> putWord8 3
         get
           = do i <- getWord8
                case i of
                    0 -> return PosEdge
                    1 -> return NegEdge
+                   2 -> return AsyncHigh
+                   3 -> return AsyncLow
                    _ -> error "Corrupted binary data for Edge"
 
 
