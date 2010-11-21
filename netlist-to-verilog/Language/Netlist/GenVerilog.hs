@@ -154,21 +154,21 @@ mk_stmt (FunCallStmt x es)
 
 mk_lit :: Maybe Size -> ExprLit -> V.Number
 mk_lit mb_sz lit
-  = V.IntNum Nothing (fmap show mb_sz) (Just base) str
+  = V.IntNum Nothing (fmap show mb_sz) mb_base str
+  -- Note that this does not truncate 'str' if its length is more than the size.
   where
-    is_bit = case (lit, mb_sz) of
-               (ExprBit{}, _)  -> True
-               (_, Just 1)     -> True
-               _               -> False
-
-    (base_int, base) = if is_bit then (2, V.BinBase) else (16, V.HexBase)
-
     hexdigits = "0123456789abcdef"
 
-    str = case lit of
-            ExprNum x        -> showIntAtBase base_int (hexdigits !!) x ""
-            ExprBit b        -> [bit_char b]
-            ExprBitVector bs -> map bit_char bs
+    (str, mb_base)
+      = case lit of
+          ExprNum x
+            -> case mb_sz of
+                 Just n
+                   | n <= 4       -> (showIntAtBase 2 (hexdigits !!) x "", Just V.BinBase)
+                   | otherwise    -> (showIntAtBase 16 (hexdigits !!) x "", Just V.HexBase)
+                 Nothing          -> (show x, Nothing)
+          ExprBit b               -> ([bit_char b], Nothing)
+          ExprBitVector bs        -> (map bit_char bs, Just V.BinBase)
 
 bit_char :: Bit -> Char
 bit_char T = '1'
