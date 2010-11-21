@@ -31,12 +31,11 @@ ds :: [Decl]
 ds = [ NetDecl "a" (makeRange Down 16) (Just (ExprVar "x"))
      , NetDecl "b" (makeRange Down 16) (Just (sizedInteger 16 10))
      , MemDecl "c" Nothing (makeRange Down 16)
-     , ProcessDecl
-       [ (Event (ExprVar "reset") PosEdge, Assign (ExprVar "c") (sizedInteger 16 0))
-       , (Event (ExprVar "clk") PosEdge, If (ExprVar "enable")
-                                  (Assign (ExprVar "c") (ExprVar "x"))
-                                  Nothing)
-       ]
+     , ProcessDecl (Event (ExprVar "clk") PosEdge)
+                   (Just (Event (ExprVar "reset") PosEdge, (Assign (ExprVar "c") (sizedInteger 16 0))))
+                   (If (ExprVar "enable")
+                         (Assign (ExprVar "c") (ExprVar "x"))
+                         Nothing)
      ]
 
 var_exprs :: [Expr]

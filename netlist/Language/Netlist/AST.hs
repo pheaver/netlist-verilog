@@ -88,20 +88,8 @@ data Decl
   -- declare an external module entity
   -- TODO: ExternDecl ExternLang
 
-  -- | A general process construct, compatible with both VHDL and Verilog
-  -- processes.  It supports positive and negative edge triggers and a body (a
-  -- statement) for each trigger.  Here are loose semantics of a process
-  -- @[(trigger0, stmt0), (trigger1, stmt1)...]@:
-  --
-  -- @
-  -- if trigger0
-  --    statement0
-  -- else if
-  --    trigger1
-  -- ...
-  -- @
-
-  | ProcessDecl [(Event, Stmt)]
+  -- | A sequential process with clock and (optional) asynchronous reset.
+  | ProcessDecl Event (Maybe (Event, Stmt)) Stmt
 
   -- | A statement that executes once at the beginning of simulation.
   -- Equivalent to Verilog \"initial\" statement.
@@ -132,9 +120,6 @@ data Event
 data Edge
   = PosEdge
   | NegEdge
-  | AsyncHigh
-  | AsyncLow
-  -- TODO: AnyEdge?
   deriving (Eq, Ord, Show, Data, Typeable)
 
 -- | Expr is a combination of VHDL and Verilog expressions.
@@ -274,8 +259,10 @@ instance Binary Decl where
                                               put x3
                                               put x4
                                               put x5
-                ProcessDecl x1 -> do putWord8 4
-                                     put x1
+                ProcessDecl x1 x2 x3 -> do putWord8 4
+                                           put x1
+                                           put x2
+                                           put x3
                 InitProcessDecl x1 -> do putWord8 5
                                          put x1
                 CommentDecl x1 -> do putWord8 6
@@ -301,7 +288,9 @@ instance Binary Decl where
                            x5 <- get
                            return (InstDecl x1 x2 x3 x4 x5)
                    4 -> do x1 <- get
-                           return (ProcessDecl x1)
+                           x2 <- get
+                           x3 <- get
+                           return (ProcessDecl x1 x2 x3)
                    5 -> do x1 <- get
                            return (InitProcessDecl x1)
                    6 -> do x1 <- get
@@ -334,15 +323,11 @@ instance Binary Edge where
           = case x of
                 PosEdge -> putWord8 0
                 NegEdge -> putWord8 1
-                AsyncHigh -> putWord8 2
-                AsyncLow -> putWord8 3
         get
           = do i <- getWord8
                case i of
                    0 -> return PosEdge
                    1 -> return NegEdge
-                   2 -> return AsyncHigh
-                   3 -> return AsyncLow
                    _ -> error "Corrupted binary data for Edge"
 
 

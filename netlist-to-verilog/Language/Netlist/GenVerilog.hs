@@ -17,6 +17,7 @@
 -- AST permits left- and right-rotate operators, which are not supported in
 -- Verilog.
 --------------------------------------------------------------------------------
+{-# LANGUAGE ViewPatterns #-}
 
 -- TODO: endianness - currently we're hardcoded to little endian verilog
 
@@ -86,50 +87,33 @@ mk_decl (InitProcessDecl stmt)
 mk_decl (CommentDecl str)
   = [V.CommentItem str]
 
--- nothing to do here
-mk_decl (ProcessDecl [])
-  = []
-
-mk_decl (ProcessDecl xs)
+mk_decl (ProcessDecl (Event (mk_expr -> clk) edge) Nothing stmt)
   = [V.AlwaysItem (V.EventControlStmt e (Just s))]
   where
-    s = mk_process_stmt xs
-    e = V.EventControlExpr $ mk_trigger (map fst xs)
+    e    = V.EventControlExpr event
+    s    = V.IfStmt cond (Just (mk_stmt stmt)) Nothing
+
+    (event, cond) = edge_helper edge clk
+
+mk_decl (ProcessDecl (Event (mk_expr -> clk) clk_edge)
+         (Just (Event (mk_expr -> reset) reset_edge, reset_stmt)) stmt)
+  = [V.AlwaysItem (V.EventControlStmt e (Just s1))]
+  where
+    e = V.EventControlExpr (V.EventOr clk_event reset_event)
+
+    s1    = V.IfStmt reset_cond (Just (mk_stmt reset_stmt)) (Just s2)
+    s2    = V.IfStmt clk_cond   (Just (mk_stmt stmt)) Nothing
+
+    (clk_event, clk_cond) = edge_helper clk_edge clk
+    (reset_event, reset_cond) = edge_helper reset_edge reset
+
+edge_helper :: Edge -> V.Expression -> (V.EventExpr, V.Expression)
+edge_helper PosEdge x = (V.EventPosedge x, x)
+edge_helper NegEdge x = (V.EventNegedge x, V.ExprUnary V.UBang x)
 
 mk_range :: Range -> V.Range
 mk_range (Range e1 e2)
   = V.Range (mk_expr e1) (mk_expr e2)
-
-mk_process_stmt :: [(Event, Stmt)] -> V.Statement
-mk_process_stmt []
-  = error "mk_process_stmt: empty list"
-mk_process_stmt [(_, stmt)]
-  -- if this is the last one, then we don't have to check the event condition
-  = mk_stmt stmt
-mk_process_stmt ((Event e edge, stmt):xs)
-  = V.IfStmt cond (Just (mk_stmt stmt)) (Just (mk_process_stmt xs))
-  where
-    cond = case edge of
-             PosEdge -> (mk_expr e)
-             NegEdge -> V.ExprUnary V.UBang (mk_expr e)
-
--- create a Verilog event expression from a list of triggers.
--- the list must have at least one 'Event' field in it.
-mk_trigger :: [Event] -> V.EventExpr
-mk_trigger []
-  = error "mk_trigger: empty event list"
-mk_trigger xs0
-  = foldr1 V.EventOr (f xs0)
-  where
-    f []                  = []
-    f (Event x edge : xs) = e : f xs
-      where
-        e = case edge of
-              PosEdge -> V.EventPosedge (mk_expr x)
-              NegEdge -> V.EventNegedge (mk_expr x)
-              -- AnyEdge -> V.EventExpr (expr_var x)
-                         -- V.EventOr (V.EventPosedge (expr_var x)) (V.EventNegedge (expr_var x))
-                         -- is this the right thing to do?
 
 mk_stmt :: Stmt -> V.Statement
 mk_stmt (Assign x expr)

@@ -17,7 +17,6 @@ import Language.Netlist.AST
 
 import Text.PrettyPrint
 import Data.Maybe(catMaybes)
-import Data.List(nub)
 
 
 -- | Generate a 'Language.Netlist.AST.Module' as a VHDL file . The ['String'] argument
@@ -78,9 +77,6 @@ decl (MemDecl i (Just asize) dsize) = Just $
 
 decl _d = Nothing
 
-
-
-
 insts ::  [Decl] -> Doc
 insts [] = empty
 insts is = case catMaybes $ zipWith inst gensyms is of
@@ -91,13 +87,37 @@ insts is = case catMaybes $ zipWith inst gensyms is of
 inst :: String -> Decl -> Maybe Doc
 inst _ (NetAssign i e) = Just $ text i <+> text "<=" <+> expr e
 
-inst gensym proc@(ProcessDecl evs) = Just $
+inst gensym (ProcessDecl (Event clk edge) Nothing s) = Just $
     text gensym <+> colon <+> text "process" <> senlist <+> text "is" $$
     text "begin" $$
-    nest 2 (pstmts evs) $$
+    nest 2 (text "if" <+> nest 2 event <+> text "then" $$
+            nest 2 (stmt s) $$
+            text "end if" <> semi) $$
     text "end process" <+> text gensym
-  where senlist = parens $ cat $ punctuate comma $ map expr $   mkSensitivityList proc
+  where
+    senlist = parens $ expr clk
+    event   = case edge of
+                PosEdge -> text "rising_edge" <> parens (expr clk)
+                NegEdge -> text "falling_edge" <> parens (expr clk)
 
+inst gensym (ProcessDecl (Event clk clk_edge)
+             (Just (Event reset reset_edge, reset_stmt)) s) = Just $
+    text gensym <+> colon <+> text "process" <> senlist <+> text "is" $$
+    text "begin" $$
+    nest 2 (text "if" <+> nest 2 reset_event <+> text "then" $$
+            nest 2 (stmt reset_stmt) $$
+            text "elsif" <+> nest 2 clk_event <+> text "then" $$
+            nest 2 (stmt s) $$
+            text "end if" <> semi) $$
+    text "end process" <+> text gensym
+  where
+    senlist     = parens $ cat $ punctuate comma $ map expr [ clk, reset ]
+    clk_event   = case clk_edge of
+                    PosEdge -> text "rising_edge" <> parens (expr clk)
+                    NegEdge -> text "falling_edge" <> parens (expr clk)
+    reset_event = case reset_edge of
+                    PosEdge -> expr reset <+> text "= '1'"
+                    NegEdge -> expr reset <+> text "= '0'"
 
 
 inst _ (InstDecl nm inst gens ins outs) = Just $
@@ -129,18 +149,6 @@ inst _ (CommentDecl msg) = Just $
 	(vcat [ text "--" <+> text m | m <- lines msg ])
 
 inst _ _d = Nothing
-
-pstmts :: [(Event, Stmt)] -> Doc
-pstmts ss = (vcat $ zipWith mkIf is ss)  $$ text "end if" <> semi
-  where is = (text "if"):(repeat (text "elsif"))
-        mkIf i (p,s) = i <+> nest 2 (event p) <+> text "then" $$
-                       nest 2 (stmt s)
-
-event :: Event -> Doc
-event (Event i PosEdge)   = text "rising_edge" <> parens (expr i)
-event (Event i NegEdge)   = text "falling_edge" <> parens (expr i)
-event (Event i AsyncHigh) = expr i <+> text "= '1'"
-event (Event i AsyncLow)  = expr i <+> text "= '0'"
 
 stmt :: Stmt -> Doc
 stmt (Assign l r) = expr l <+> text "<=" <+> expr r <> semi
@@ -214,18 +222,6 @@ expr (ExprCase e ((p:ps,alt):alts) def) =
 	expr (ExprCond (ExprBinary Equals e p) alt (ExprCase e ((ps,alt):alts) def))
 expr x = text (show x)
 
-
--- | mkSensitivityList takes a process and extracts the appropriate sensitify list
---
-
-mkSensitivityList :: Decl -> [Expr]
-mkSensitivityList (ProcessDecl evs) = nub event_names
-  where event_names =
-	 	--   AJG: This is now *only* based on the 'Event' vars, nothing else.
-		map (\ (e,_) -> case e of
-				 Event (ExprVar name) _ -> ExprVar name
-				 _ -> error $ "strange form for mkSensitivityList " ++ show e
-		    ) evs
 
 lookupUnary :: UnaryOp -> Doc -> Doc
 lookupUnary op e = text (unOp op) <> parens e

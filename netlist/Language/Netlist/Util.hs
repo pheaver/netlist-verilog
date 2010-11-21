@@ -89,15 +89,11 @@ statements xs  = Seq xs
 generateReg :: Expr -> Expr -> Maybe (Expr, Expr) -> Maybe (Expr, Expr) ->
                Maybe Expr -> Expr -> Decl
 generateReg x clk mb_reset mb_restart mb_enable expr
-  = ProcessDecl as
+  = ProcessDecl (Event clk PosEdge) mb_reset' stmt2
   where
-    as = case mb_reset of
-           Just (reset, initial)
-             -> [ (Event reset PosEdge, Assign x initial), a0]
-           Nothing
-             -> [a0]
-
-    a0 = (Event clk PosEdge, stmt2)
+    mb_reset' = case mb_reset of
+                  Just (reset, initial) -> Just (Event reset PosEdge, Assign x initial)
+                  Nothing               -> Nothing
 
     stmt2 = case mb_restart of
               Just (restart, initial)
